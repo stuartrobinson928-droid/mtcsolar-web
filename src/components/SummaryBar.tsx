@@ -32,7 +32,10 @@ export function SummaryBar() {
         >
           Clear
         </button>
-        <button className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5">
+        <button
+          onClick={openCheckout}
+          className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5"
+        >
           Checkout
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
