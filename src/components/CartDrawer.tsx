@@ -3,7 +3,7 @@ import { X, Plus, Minus, Trash2, ArrowRight, ShoppingCart } from "lucide-react";
 import { useStore } from "@/context/store";
 
 export function CartDrawer() {
-  const { cartOpen, closeCart, items, setQty, remove, removeAll, clear, totals } = useStore();
+  const { cartOpen, closeCart, items, setQty, remove, removeAll, clear, totals, openCheckout } = useStore();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
