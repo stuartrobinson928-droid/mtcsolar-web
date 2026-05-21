@@ -37,3 +37,15 @@ export const batteriesIndoor: Product[] = [
   { id: "bat-ip21-200", name: "Aegis 200Ah IP21", category: "battery", watts: 10240, tags: ["IP21", "Indoor", "LFP"], image: batteryImg },
   { id: "bat-ip21-280", name: "Aegis 280Ah IP21", category: "battery", watts: 14336, tags: ["IP21", "Indoor", "LFP"], image: batteryImg },
 ];
+
+export const allProducts: Product[] = [
+  ...panels,
+  ...invertersHybrid,
+  ...invertersOnGrid,
+  ...batteriesOutdoor,
+  ...batteriesIndoor,
+];
+
+export function findProduct(id: string): Product | undefined {
+  return allProducts.find((p) => p.id === id);
+}
