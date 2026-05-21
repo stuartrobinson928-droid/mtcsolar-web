@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Sun, Battery, Cpu } from "lucide-react";
 import heroPanels from "@/assets/hero-panels.jpg";
 import balcony from "@/assets/balcony-bundle.jpg";
