@@ -9,6 +9,11 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { StoreProvider, ThemeProvider } from "@/context/store";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { SummaryBar } from "@/components/SummaryBar";
+import { CartDrawer } from "@/components/CartDrawer";
 
 function NotFoundComponent() {
   return (
