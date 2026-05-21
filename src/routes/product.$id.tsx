@@ -45,7 +45,7 @@ const categoryMeta: Record<Product["category"], { label: string; Icon: typeof Su
 };
 
 function ProductPage() {
-  const { product } = Route.useLoaderData();
+  const { product } = Route.useLoaderData() as { product: Product };
   const { add, state } = useStore();
   const meta = categoryMeta[product.category];
   const inCart = (state.items[product.id]?.qty ?? 0) > 0;
