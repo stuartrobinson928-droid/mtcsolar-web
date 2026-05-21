@@ -67,6 +67,10 @@ interface Ctx {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
+  checkoutOpen: boolean;
+  openCheckout: () => void;
+  closeCheckout: () => void;
+  bounceKey: number;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
@@ -74,6 +78,8 @@ const StoreCtx = createContext<Ctx | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [bounceKey, setBounceKey] = useState(0);
 
   const totals = useMemo(() => {
     let panels = 0, inverters = 0, batteries = 0, panelW = 0, inverterW = 0;
@@ -91,7 +97,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value: Ctx = {
     state,
     items,
-    add: (p) => dispatch({ type: "add", product: p }),
+    add: (p) => { dispatch({ type: "add", product: p }); setBounceKey((k) => k + 1); },
     remove: (id) => dispatch({ type: "remove", id }),
     removeAll: (id) => dispatch({ type: "removeAll", id }),
     setQty: (id, qty) => dispatch({ type: "setQty", id, qty }),
@@ -101,8 +107,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     openCart: () => setCartOpen(true),
     closeCart: () => setCartOpen(false),
     toggleCart: () => setCartOpen((v) => !v),
+    checkoutOpen,
+    openCheckout: () => { setCartOpen(false); setCheckoutOpen(true); },
+    closeCheckout: () => setCheckoutOpen(false),
+    bounceKey,
   };
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
+}
+
+// Pricing helper (PKR) — derived from watts/category to keep data file simple
+export function priceFor(p: Product): number {
+  const w = p.watts ?? 0;
+  const ratePerW = p.category === "panel" ? 38 : p.category === "inverter" ? 55 : 42;
+  const base = Math.round((w * ratePerW) / 100) * 100;
+  return Math.max(base, 8500);
 }
 
 export function useStore() {
