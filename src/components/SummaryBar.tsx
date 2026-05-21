@@ -2,7 +2,7 @@ import { ArrowRight, Sun, Zap, Battery } from "lucide-react";
 import { useStore } from "@/context/store";
 
 export function SummaryBar() {
-  const { totals, clear } = useStore();
+  const { totals, clear, openCheckout } = useStore();
   const visible = totals.count > 0;
 
   return (
