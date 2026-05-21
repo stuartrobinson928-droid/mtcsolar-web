@@ -13,7 +13,7 @@ const links = [
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
-  const { totals } = useStore();
+  const { totals, toggleCart } = useStore();
   const { theme, toggle } = useTheme();
 
   useEffect(() => {
@@ -61,6 +61,7 @@ export function Navbar() {
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
           <button
+            onClick={toggleCart}
             aria-label="Cart"
             className="relative grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-surface/60 text-foreground transition-all hover:border-gold/50"
           >
