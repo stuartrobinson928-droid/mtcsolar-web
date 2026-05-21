@@ -121,6 +121,7 @@ function RootComponent() {
             <Footer />
             <SummaryBar />
             <CartDrawer />
+            <CheckoutModal />
           </div>
         </StoreProvider>
       </ThemeProvider>
