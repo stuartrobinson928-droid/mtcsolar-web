@@ -1,11 +1,11 @@
-import { createContext, useContext, useMemo, useReducer, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useReducer, useEffect, useState, type ReactNode } from "react";
 
 export type Category = "panel" | "inverter" | "battery";
 export interface Product {
   id: string;
   name: string;
   category: Category;
-  watts?: number; // panel: per panel watt; inverter: kW*1000; battery: Wh
+  watts?: number;
   tags: string[];
   image: string;
   series?: string;
@@ -16,6 +16,8 @@ interface State { items: Record<string, CartItem> }
 type Action =
   | { type: "add"; product: Product }
   | { type: "remove"; id: string }
+  | { type: "removeAll"; id: string }
+  | { type: "setQty"; id: string; qty: number }
   | { type: "clear" };
 
 const initial: State = { items: {} };
@@ -34,6 +36,19 @@ function reducer(state: State, action: Action): State {
       else next[action.id] = { ...cur, qty: cur.qty - 1 };
       return { items: next };
     }
+    case "removeAll": {
+      const next = { ...state.items };
+      delete next[action.id];
+      return { items: next };
+    }
+    case "setQty": {
+      const cur = state.items[action.id];
+      if (!cur) return state;
+      const next = { ...state.items };
+      if (action.qty <= 0) delete next[action.id];
+      else next[action.id] = { ...cur, qty: action.qty };
+      return { items: next };
+    }
     case "clear":
       return { items: {} };
   }
@@ -41,16 +56,24 @@ function reducer(state: State, action: Action): State {
 
 interface Ctx {
   state: State;
+  items: CartItem[];
   add: (p: Product) => void;
   remove: (id: string) => void;
+  removeAll: (id: string) => void;
+  setQty: (id: string, qty: number) => void;
   clear: () => void;
   totals: { panels: number; inverters: number; batteries: number; kw: number; count: number };
+  cartOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
+  toggleCart: () => void;
 }
 
 const StoreCtx = createContext<Ctx | null>(null);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initial);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const totals = useMemo(() => {
     let panels = 0, inverters = 0, batteries = 0, panelW = 0, inverterW = 0;
@@ -63,12 +86,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return { panels, inverters, batteries, kw, count: panels + inverters + batteries };
   }, [state]);
 
+  const items = useMemo(() => Object.values(state.items), [state]);
+
   const value: Ctx = {
     state,
+    items,
     add: (p) => dispatch({ type: "add", product: p }),
     remove: (id) => dispatch({ type: "remove", id }),
+    removeAll: (id) => dispatch({ type: "removeAll", id }),
+    setQty: (id, qty) => dispatch({ type: "setQty", id, qty }),
     clear: () => dispatch({ type: "clear" }),
     totals,
+    cartOpen,
+    openCart: () => setCartOpen(true),
+    closeCart: () => setCartOpen(false),
+    toggleCart: () => setCartOpen((v) => !v),
   };
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
