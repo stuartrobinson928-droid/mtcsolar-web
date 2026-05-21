@@ -96,10 +96,18 @@ export function Hero() {
           </dl>
         </div>
 
-        <div className="lg:col-span-6">
-          <div className="relative animate-welcome-rise" style={{ animationDelay: "120ms" }}>
+        <div className="lg:col-span-6" style={{ perspective: "1100px" }}>
+          <div
+            className="relative animate-welcome-rise animate-float [transform-style:preserve-3d] [will-change:transform]"
+            style={{ animationDelay: "120ms" }}
+            onMouseMove={onMove}
+            onMouseLeave={onLeave}
+          >
             <div className="absolute -inset-6 rounded-3xl bg-gold/10 blur-3xl" aria-hidden />
-            <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-surface shadow-gold">
+            <div
+              ref={tiltRef}
+              className="relative overflow-hidden rounded-3xl border border-border/60 bg-surface shadow-gold transition-transform duration-300 ease-out [transform-style:preserve-3d] [will-change:transform]"
+            >
               <div className="relative aspect-[4/3]">
                 {slides.map((sl, i) => (
                   <img
