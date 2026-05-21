@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Sun, Moon, ShoppingCart, Zap } from "lucide-react";
+import { Sun, Moon, ShoppingCart } from "lucide-react";
 import { useStore, useTheme } from "@/context/store";
+import logoLight from "@/assets/mtc-logo-full.png";
+import logoDark from "@/assets/mtc-logo-dark.png";
 
 const links = [
   { href: "#panels", label: "Panels" },
@@ -25,16 +27,17 @@ export function Navbar() {
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-out ${
         scrolled
-          ? "glass border-b border-border/40 py-3"
-          : "bg-transparent py-6"
+          ? "glass border-b border-border/40 py-2.5"
+          : "bg-transparent py-5"
       }`}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
-        <a href="#" className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gold-gradient shadow-gold">
-            <Zap className="h-4 w-4 text-background" strokeWidth={2.5} />
-          </span>
-          Helios<span className="text-gold">.</span>
+        <a href="#" className="flex items-center">
+          <img
+            src={theme === "dark" ? logoDark : logoLight}
+            alt="MTC Solar"
+            className={`w-auto transition-all duration-300 ${scrolled ? "h-8" : "h-10"}`}
+          />
         </a>
 
         <nav className="hidden items-center gap-8 md:flex">
