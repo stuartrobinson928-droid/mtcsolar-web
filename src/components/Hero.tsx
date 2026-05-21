@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { ArrowRight, Sun, Battery, Cpu } from "lucide-react";
 import heroPanels from "@/assets/hero-panels.jpg";
 import balcony from "@/assets/balcony-bundle.jpg";
+import logoMark from "@/assets/mtc-logo-mark.png";
+import logoMarkDark from "@/assets/mtc-logo-mark-dark.png";
+import { useTheme } from "@/context/store";
 
 const slides = [
   {
