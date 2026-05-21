@@ -46,8 +46,8 @@ export function CheckoutModal() {
     step === 1 ? name.trim().length > 1 && /^[0-9+\-\s]{7,}$/.test(phone) && address.trim().length > 5 && city.trim().length > 1 :
     step === 2 ? true : false;
 
-  const next = () => setStep((s) => Math.min(3, (s + 1) as Step));
-  const back = () => setStep((s) => Math.max(0, (s - 1) as Step));
+  const next = () => setStep((s) => (Math.min(3, s + 1)) as Step);
+  const back = () => setStep((s) => (Math.max(0, s - 1)) as Step);
 
   const downloadInvoice = () => {
     const lines: string[] = [];
