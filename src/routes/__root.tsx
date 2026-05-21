@@ -14,6 +14,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { SummaryBar } from "@/components/SummaryBar";
 import { CartDrawer } from "@/components/CartDrawer";
+import { CheckoutModal } from "@/components/CheckoutModal";
 
 function NotFoundComponent() {
   return (
@@ -120,6 +121,7 @@ function RootComponent() {
             <Footer />
             <SummaryBar />
             <CartDrawer />
+            <CheckoutModal />
           </div>
         </StoreProvider>
       </ThemeProvider>

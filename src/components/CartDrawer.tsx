@@ -3,7 +3,7 @@ import { X, Plus, Minus, Trash2, ArrowRight, ShoppingCart } from "lucide-react";
 import { useStore } from "@/context/store";
 
 export function CartDrawer() {
-  const { cartOpen, closeCart, items, setQty, remove, removeAll, clear, totals } = useStore();
+  const { cartOpen, closeCart, items, setQty, remove, removeAll, clear, totals, openCheckout } = useStore();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -142,10 +142,11 @@ export function CartDrawer() {
               Clear
             </button>
             <button
+              onClick={openCheckout}
               disabled={items.length === 0}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Checkout
+              Proceed to Checkout
               <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>

@@ -2,7 +2,7 @@ import { ArrowRight, Sun, Zap, Battery } from "lucide-react";
 import { useStore } from "@/context/store";
 
 export function SummaryBar() {
-  const { totals, clear } = useStore();
+  const { totals, clear, openCheckout } = useStore();
   const visible = totals.count > 0;
 
   return (
@@ -32,7 +32,10 @@ export function SummaryBar() {
         >
           Clear
         </button>
-        <button className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5">
+        <button
+          onClick={openCheckout}
+          className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-5 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5"
+        >
           Checkout
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
