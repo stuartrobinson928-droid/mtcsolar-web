@@ -22,10 +22,24 @@ const slides = [
 
 export function Hero() {
   const [idx, setIdx] = useState(0);
+  const tiltRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const t = setInterval(() => setIdx((i) => (i + 1) % slides.length), 5500);
     return () => clearInterval(t);
   }, []);
+
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = tiltRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    el.style.transform = `perspective(1100px) rotateY(${px * 9}deg) rotateX(${-py * 9}deg) translateZ(0)`;
+  };
+  const onLeave = () => {
+    if (tiltRef.current) tiltRef.current.style.transform = "perspective(1100px) rotateY(0deg) rotateX(0deg)";
+  };
+
   const s = slides[idx];
 
   return (
