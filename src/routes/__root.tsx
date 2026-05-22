@@ -82,6 +82,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "MTC Solar — premium solar panels, hybrid inverters and lithium storage." },
       { property: "og:site_name", content: "MTC Solar" },
       { property: "og:type", content: "website" },
+      { property: "og:title", content: "MTC Solar | Premium Solar Store" },
+      { name: "twitter:title", content: "MTC Solar | Premium Solar Store" },
+      { property: "og:description", content: "MTC Solar — premium solar panels, hybrid inverters and lithium storage." },
+      { name: "twitter:description", content: "MTC Solar — premium solar panels, hybrid inverters and lithium storage." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/1kiQpu6jQZVrWJsY8RgLBwhPjXm2/social-images/social-1779442379244-favicon.webp" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/1kiQpu6jQZVrWJsY8RgLBwhPjXm2/social-images/social-1779442379244-favicon.webp" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
