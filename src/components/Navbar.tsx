@@ -8,7 +8,7 @@ const links = [
   { href: "#panels", label: "Panels" },
   { href: "#inverters", label: "Inverters" },
   { href: "#batteries", label: "Storage" },
-  { href: "#faq", label: "FAQ" },
+  { href: "#contact", label: "Contact" },
 ];
 
 export function Navbar() {
