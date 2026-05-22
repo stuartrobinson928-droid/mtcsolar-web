@@ -3,7 +3,6 @@ import { Hero } from "@/components/Hero";
 import { PanelsSection } from "@/components/PanelsSection";
 import { InvertersSection } from "@/components/InvertersSection";
 import { BatteriesSection } from "@/components/BatteriesSection";
-import { FaqSection } from "@/components/FaqSection";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,7 +23,7 @@ function Index() {
       <PanelsSection />
       <InvertersSection />
       <BatteriesSection />
-      <FaqSection />
     </main>
   );
 }
+
