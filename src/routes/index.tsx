@@ -8,7 +8,7 @@ import { FaqSection } from "@/components/FaqSection";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "MTC Solar — Premium Solar Hardware Store" },
+      { title: "MTC Solar | Premium Solar Store" },
       { name: "description", content: "Engineered solar systems: bifacial panels, hybrid inverters and IP-rated lithium storage." },
       { property: "og:title", content: "MTC Solar — Premium Solar Hardware" },
       { property: "og:description", content: "Curated solar systems for serious homes and industries." },
