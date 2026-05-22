@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MTC Solar" },
+      { title: "MTC Solar | Premium Solar Store" },
       { name: "description", content: "MTC Solar — premium solar panels, hybrid inverters and lithium storage." },
       { property: "og:site_name", content: "MTC Solar" },
       { property: "og:type", content: "website" },
