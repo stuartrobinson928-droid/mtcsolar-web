@@ -15,6 +15,8 @@ import { Footer } from "@/components/Footer";
 import { SummaryBar } from "@/components/SummaryBar";
 import { CartDrawer } from "@/components/CartDrawer";
 import { CheckoutModal } from "@/components/CheckoutModal";
+import { ScrollProgress } from "@/components/ScrollProgress";
+import { SideNav } from "@/components/SideNav";
 
 function NotFoundComponent() {
   return (
@@ -123,7 +125,9 @@ function RootComponent() {
       <ThemeProvider>
         <StoreProvider>
           <div className="relative min-h-screen bg-background text-foreground">
+            <ScrollProgress />
             <Navbar />
+            <SideNav />
             <Outlet />
             <Footer />
             <SummaryBar />
