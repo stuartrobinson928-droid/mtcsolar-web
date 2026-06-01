@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Sun, Moon, ShoppingCart } from "lucide-react";
+import { Sun, Moon, ShoppingCart, User, ShieldCheck, LogOut } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useStore, useTheme } from "@/context/store";
+import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { checkIsAdmin } from "@/lib/products.functions";
 import logoLight from "@/assets/mtc-logo-full.png";
 import logoDark from "@/assets/mtc-logo-dark.png";
 
