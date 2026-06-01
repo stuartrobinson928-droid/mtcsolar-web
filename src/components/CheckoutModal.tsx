@@ -51,7 +51,7 @@ export function CheckoutModal() {
 
   const canNext =
     step === 0 ? items.length > 0 :
-    step === 1 ? name.trim().length > 1 && /^[0-9+\-\s]{7,}$/.test(phone) && address.trim().length > 5 && city.trim().length > 1 :
+    step === 1 ? name.trim().length > 1 && /^\S+@\S+\.\S+$/.test(email) && /^[0-9+\-\s]{7,}$/.test(phone) && address.trim().length > 5 && city.trim().length > 1 :
     step === 2 ? true : false;
 
   const next = () => setStep((s) => (Math.min(3, s + 1)) as Step);
@@ -64,6 +64,7 @@ export function CheckoutModal() {
     lines.push("Date: " + new Date().toLocaleString());
     lines.push("");
     lines.push("Customer: " + name);
+    lines.push("Email: " + email);
     lines.push("Phone: " + phone);
     lines.push("Address: " + address + ", " + city);
     lines.push("");
@@ -87,19 +88,35 @@ export function CheckoutModal() {
     URL.revokeObjectURL(url);
   };
 
-  const confirm = () => {
-    // Persist a minimal ledger entry for the admin Khata
+  const confirm = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     try {
-      const key = "mtc.ledger";
-      const prev = JSON.parse(localStorage.getItem(key) || "[]");
-      prev.unshift({
-        orderId, at: Date.now(), name, phone, address, city,
-        items: items.map(({ product, qty }) => ({ id: product.id, name: product.name, qty, price: priceFor(product) })),
-        subtotal, shipping: shipCost, tax, grand, payment: pay, status: "pending",
+      const res = await createOrderFn({
+        data: {
+          customer_name: name.trim(),
+          customer_email: email.trim(),
+          customer_phone: phone.trim(),
+          city: city.trim(),
+          delivery_address: address.trim(),
+          notes: `Shipping: ${shipping}. Subtotal ${subtotal}, ship ${shipCost}, tax ${tax}, total ${grand}`,
+          payment_method: payToDb(pay),
+          items: items.map(({ product, qty }) => ({
+            product_id: null,
+            product_name: product.name,
+            quantity: qty,
+            unit_price: priceFor(product),
+          })),
+        },
       });
-      localStorage.setItem(key, JSON.stringify(prev.slice(0, 200)));
-    } catch {}
-    setStep(3);
+      setOrderId(res.order_number);
+      toast.success("Order placed: " + res.order_number);
+      setStep(3);
+    } catch (e) {
+      toast.error((e as Error).message || "Failed to place order");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const finish = () => {
