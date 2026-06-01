@@ -22,6 +22,42 @@ export function Navbar() {
   const navRef = useRef<HTMLDivElement>(null);
   const [pill, setPill] = useState<{ left: number; width: number; opacity: number }>({ left: 0, width: 0, opacity: 0 });
   const [activeHash, setActiveHash] = useState<string>("");
+  const navigate = useNavigate();
+  const isAdminFn = useServerFn(checkIsAdmin);
+  const [user, setUser] = useState<{ email: string | null } | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const refresh = async (session: { user: { email: string | null } } | null) => {
+      if (!session) {
+        if (mounted) { setUser(null); setIsAdmin(false); }
+        return;
+      }
+      if (mounted) setUser({ email: session.user.email });
+      try {
+        const res = await isAdminFn({});
+        if (mounted) setIsAdmin(!!res.isAdmin);
+      } catch {
+        if (mounted) setIsAdmin(false);
+      }
+    };
+    supabase.auth.getSession().then(({ data }) => refresh(data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => refresh(session));
+    return () => { mounted = false; subscription.unsubscribe(); };
+  }, [isAdminFn]);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => {
