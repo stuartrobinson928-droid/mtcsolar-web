@@ -340,9 +340,10 @@ export function CheckoutModal() {
               ) : (
                 <button
                   onClick={confirm}
-                  className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-6 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-6 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Place order <Check className="h-3.5 w-3.5" />
+                  {submitting ? "Placing…" : "Place order"} <Check className="h-3.5 w-3.5" />
                 </button>
               )}
             </footer>
