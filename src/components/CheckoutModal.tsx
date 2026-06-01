@@ -215,6 +215,7 @@ export function CheckoutModal() {
                   </h3>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FloatField label="Full name" value={name} onChange={setName} />
+                    <FloatField label="Email address" value={email} onChange={setEmail} />
                     <FloatField label="Phone (e.g. 03xx-xxxxxxx)" value={phone} onChange={setPhone} />
                     <FloatField label="City" value={city} onChange={setCity} />
                     <FloatField label="Detailed shipping address" value={address} onChange={setAddress} className="sm:col-span-2" textarea />
