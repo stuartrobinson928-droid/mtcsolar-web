@@ -197,7 +197,7 @@ function ProductsPage() {
               <button onClick={() => setForm(null)} className="grid h-9 w-9 place-items-center rounded-full border border-border/60 text-muted-foreground"><X className="h-4 w-4" /></button>
             </header>
             <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
-              <FInput label="Title" v={form.title} onChange={(v) => setForm({ ...form, title: v })} className="sm:col-span-2" />
+              <FInput label="Title" v={form.title} onChange={(v: string) => setForm({ ...form, title: v })} className="sm:col-span-2" />
               <FSel label="Category" v={form.category} options={CATEGORIES as any} onChange={(v) => setForm({ ...form, category: v as any })} />
               <FSel label="Status" v={form.status} options={STATUSES as any} onChange={(v) => setForm({ ...form, status: v as any })} />
               <FInput label="Brand" v={form.brand} onChange={(v) => setForm({ ...form, brand: v })} />
