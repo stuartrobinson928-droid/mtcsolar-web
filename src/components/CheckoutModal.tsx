@@ -1,22 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { X, ArrowRight, ArrowLeft, Check, Download, Truck, User, Wallet, Banknote, Smartphone, ShieldCheck } from "lucide-react";
 import { priceFor, useStore } from "@/context/store";
+import { useServerFn } from "@tanstack/react-start";
+import { createOrder } from "@/lib/orders.functions";
+import { toast } from "sonner";
 
 type Pay = "bank" | "cod" | "easypaisa" | "jazzcash";
 type Step = 0 | 1 | 2 | 3;
 
 const fmt = (n: number) => "Rs " + n.toLocaleString("en-PK");
+const payToDb = (p: Pay): "bank_transfer" | "cod" | "easypaisa" | "jazzcash" =>
+  p === "bank" ? "bank_transfer" : p;
 
 export function CheckoutModal() {
   const { checkoutOpen, closeCheckout, items, totals, clear } = useStore();
+  const createOrderFn = useServerFn(createOrder);
   const [step, setStep] = useState<Step>(0);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [shipping, setShipping] = useState<"standard" | "express" | "install">("standard");
   const [pay, setPay] = useState<Pay>("bank");
-  const [orderId] = useState(() => "MTC-" + Math.random().toString(36).slice(2, 8).toUpperCase());
+  const [submitting, setSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState("MTC-PENDING");
 
   const subtotal = useMemo(
     () => items.reduce((s, { product, qty }) => s + priceFor(product) * qty, 0),
@@ -43,7 +51,7 @@ export function CheckoutModal() {
 
   const canNext =
     step === 0 ? items.length > 0 :
-    step === 1 ? name.trim().length > 1 && /^[0-9+\-\s]{7,}$/.test(phone) && address.trim().length > 5 && city.trim().length > 1 :
+    step === 1 ? name.trim().length > 1 && /^\S+@\S+\.\S+$/.test(email) && /^[0-9+\-\s]{7,}$/.test(phone) && address.trim().length > 5 && city.trim().length > 1 :
     step === 2 ? true : false;
 
   const next = () => setStep((s) => (Math.min(3, s + 1)) as Step);
@@ -56,6 +64,7 @@ export function CheckoutModal() {
     lines.push("Date: " + new Date().toLocaleString());
     lines.push("");
     lines.push("Customer: " + name);
+    lines.push("Email: " + email);
     lines.push("Phone: " + phone);
     lines.push("Address: " + address + ", " + city);
     lines.push("");
@@ -79,19 +88,35 @@ export function CheckoutModal() {
     URL.revokeObjectURL(url);
   };
 
-  const confirm = () => {
-    // Persist a minimal ledger entry for the admin Khata
+  const confirm = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     try {
-      const key = "mtc.ledger";
-      const prev = JSON.parse(localStorage.getItem(key) || "[]");
-      prev.unshift({
-        orderId, at: Date.now(), name, phone, address, city,
-        items: items.map(({ product, qty }) => ({ id: product.id, name: product.name, qty, price: priceFor(product) })),
-        subtotal, shipping: shipCost, tax, grand, payment: pay, status: "pending",
+      const res = await createOrderFn({
+        data: {
+          customer_name: name.trim(),
+          customer_email: email.trim(),
+          customer_phone: phone.trim(),
+          city: city.trim(),
+          delivery_address: address.trim(),
+          notes: `Shipping: ${shipping}. Subtotal ${subtotal}, ship ${shipCost}, tax ${tax}, total ${grand}`,
+          payment_method: payToDb(pay),
+          items: items.map(({ product, qty }) => ({
+            product_id: null,
+            product_name: product.name,
+            quantity: qty,
+            unit_price: priceFor(product),
+          })),
+        },
       });
-      localStorage.setItem(key, JSON.stringify(prev.slice(0, 200)));
-    } catch {}
-    setStep(3);
+      setOrderId(res.order_number);
+      toast.success("Order placed: " + res.order_number);
+      setStep(3);
+    } catch (e) {
+      toast.error((e as Error).message || "Failed to place order");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const finish = () => {
@@ -190,6 +215,7 @@ export function CheckoutModal() {
                   </h3>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FloatField label="Full name" value={name} onChange={setName} />
+                    <FloatField label="Email address" value={email} onChange={setEmail} />
                     <FloatField label="Phone (e.g. 03xx-xxxxxxx)" value={phone} onChange={setPhone} />
                     <FloatField label="City" value={city} onChange={setCity} />
                     <FloatField label="Detailed shipping address" value={address} onChange={setAddress} className="sm:col-span-2" textarea />
@@ -314,9 +340,10 @@ export function CheckoutModal() {
               ) : (
                 <button
                   onClick={confirm}
-                  className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-6 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 rounded-full bg-gold-gradient px-6 py-2.5 text-xs font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Place order <Check className="h-3.5 w-3.5" />
+                  {submitting ? "Placing…" : "Place order"} <Check className="h-3.5 w-3.5" />
                 </button>
               )}
             </footer>
