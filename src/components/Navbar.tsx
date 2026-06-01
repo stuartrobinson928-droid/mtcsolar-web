@@ -31,12 +31,12 @@ export function Navbar() {
 
   useEffect(() => {
     let mounted = true;
-    const refresh = async (session: { user: { email: string | null } } | null) => {
+    const refresh = async (session: { user: { email?: string | null } } | null) => {
       if (!session) {
         if (mounted) { setUser(null); setIsAdmin(false); }
         return;
       }
-      if (mounted) setUser({ email: session.user.email });
+      if (mounted) setUser({ email: session.user.email ?? null });
       try {
         const res = await isAdminFn({});
         if (mounted) setIsAdmin(!!res.isAdmin);
