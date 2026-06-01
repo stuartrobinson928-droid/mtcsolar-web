@@ -263,7 +263,7 @@ function FInput({ label, v, onChange, type = "text", className = "" }: any) {
     </label>
   );
 }
-function FTA({ label, v, onChange, className = "" }: any) {
+function FTA({ label, v, onChange, className = "" }: { label: string; v: string; onChange: (v: string) => void; className?: string }) {
   return (
     <label className={`block ${className}`}>
       <p className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -272,7 +272,7 @@ function FTA({ label, v, onChange, className = "" }: any) {
     </label>
   );
 }
-function FSel({ label, v, options, onChange }: any) {
+function FSel({ label, v, options, onChange }: { label: string; v: string; options: readonly string[]; onChange: (v: string) => void }) {
   return (
     <label className="block">
       <p className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
