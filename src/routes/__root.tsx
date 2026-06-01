@@ -4,9 +4,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { StoreProvider, ThemeProvider } from "@/context/store";
@@ -119,20 +121,23 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const isAdmin = path.startsWith("/admin") || path.startsWith("/_admin");
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <StoreProvider>
           <div className="relative min-h-screen bg-background text-foreground">
-            <ScrollProgress />
-            <Navbar />
-            <SideNav />
+            {!isAdmin && <ScrollProgress />}
+            {!isAdmin && <Navbar />}
+            {!isAdmin && <SideNav />}
             <Outlet />
-            <Footer />
-            <SummaryBar />
-            <CartDrawer />
-            <CheckoutModal />
+            {!isAdmin && <Footer />}
+            {!isAdmin && <SummaryBar />}
+            {!isAdmin && <CartDrawer />}
+            {!isAdmin && <CheckoutModal />}
+            <Toaster position="top-right" theme="dark" />
           </div>
         </StoreProvider>
       </ThemeProvider>
