@@ -254,7 +254,7 @@ function ProductsPage() {
   );
 }
 
-function FInput({ label, v, onChange, type = "text", className = "" }: any) {
+function FInput({ label, v, onChange, type = "text", className = "" }: { label: string; v: string; onChange: (v: string) => void; type?: string; className?: string }) {
   return (
     <label className={`block ${className}`}>
       <p className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
