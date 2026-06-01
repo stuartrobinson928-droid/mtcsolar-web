@@ -1,22 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { X, ArrowRight, ArrowLeft, Check, Download, Truck, User, Wallet, Banknote, Smartphone, ShieldCheck } from "lucide-react";
 import { priceFor, useStore } from "@/context/store";
+import { useServerFn } from "@tanstack/react-start";
+import { createOrder } from "@/lib/orders.functions";
+import { toast } from "sonner";
 
 type Pay = "bank" | "cod" | "easypaisa" | "jazzcash";
 type Step = 0 | 1 | 2 | 3;
 
 const fmt = (n: number) => "Rs " + n.toLocaleString("en-PK");
+const payToDb = (p: Pay): "bank_transfer" | "cod" | "easypaisa" | "jazzcash" =>
+  p === "bank" ? "bank_transfer" : p;
 
 export function CheckoutModal() {
   const { checkoutOpen, closeCheckout, items, totals, clear } = useStore();
+  const createOrderFn = useServerFn(createOrder);
   const [step, setStep] = useState<Step>(0);
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [shipping, setShipping] = useState<"standard" | "express" | "install">("standard");
   const [pay, setPay] = useState<Pay>("bank");
-  const [orderId] = useState(() => "MTC-" + Math.random().toString(36).slice(2, 8).toUpperCase());
+  const [submitting, setSubmitting] = useState(false);
+  const [orderId, setOrderId] = useState("MTC-PENDING");
 
   const subtotal = useMemo(
     () => items.reduce((s, { product, qty }) => s + priceFor(product) * qty, 0),
