@@ -20,7 +20,9 @@ function consumeLastCapturedError() {
   lastCapturedError = void 0;
   return error;
 }
-function renderErrorPage() {
+function renderErrorPage(error) {
+  const errorDetails = error ? `<pre style="text-align: left; background: #f1f5f9; padding: 1rem; border-radius: 0.375rem; overflow: auto; max-height: 200px; margin-top: 1rem; font-size: 0.8rem; color: #b91c1c; font-family: monospace; white-space: pre-wrap; word-break: break-all;">${error instanceof Error ? `${error.name}: ${error.message}
+${error.stack}` : String(error)}</pre>` : "";
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -29,7 +31,7 @@ function renderErrorPage() {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
       body { font: 15px/1.5 system-ui, -apple-system, sans-serif; background: #fafafa; color: #111; display: grid; place-items: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
-      .card { max-width: 28rem; width: 100%; text-align: center; padding: 2rem; }
+      .card { max-width: 32rem; width: 100%; text-align: center; padding: 2rem; }
       h1 { font-size: 1.25rem; margin: 0 0 0.5rem; }
       p { color: #4b5563; margin: 0 0 1.5rem; }
       .actions { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
@@ -42,7 +44,8 @@ function renderErrorPage() {
     <div class="card">
       <h1>This page didn't load</h1>
       <p>Something went wrong on our end. You can try refreshing or head back home.</p>
-      <div class="actions">
+      ${errorDetails}
+      <div class="actions" style="margin-top: 1.5rem;">
         <button class="primary" onclick="location.reload()">Try again</button>
         <a class="secondary" href="/">Go home</a>
       </div>
@@ -59,8 +62,8 @@ async function getServerEntry() {
   }
   return serverEntryPromise;
 }
-function brandedErrorResponse() {
-  return new Response(renderErrorPage(), {
+function brandedErrorResponse(error) {
+  return new Response(renderErrorPage(error), {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" }
   });
@@ -90,8 +93,9 @@ async function normalizeCatastrophicSsrResponse(response) {
   if (!isCatastrophicSsrErrorBody(body, response.status)) {
     return response;
   }
-  console.error(consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`));
-  return brandedErrorResponse();
+  const capturedError = consumeLastCapturedError() ?? new Error(`h3 swallowed SSR error: ${body}`);
+  console.error(capturedError);
+  return brandedErrorResponse(capturedError);
 }
 const server = {
   async fetch(request, env, ctx) {
@@ -101,7 +105,7 @@ const server = {
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
-      return brandedErrorResponse();
+      return brandedErrorResponse(error);
     }
   }
 };
