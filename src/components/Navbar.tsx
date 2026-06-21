@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Sun, Moon, ShoppingCart, User, ShieldCheck, LogOut } from "lucide-react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Sun, Moon, ShoppingCart } from "lucide-react";
 import { useStore, useTheme } from "@/context/store";
-import { supabase } from "@/integrations/supabase/client";
-import { useServerFn } from "@tanstack/react-start";
-import { checkIsAdmin } from "@/lib/products.functions";
 import logoLight from "@/assets/mtc-logo-full.png";
 import logoDark from "@/assets/mtc-logo-dark.png";
 
@@ -22,42 +18,6 @@ export function Navbar() {
   const navRef = useRef<HTMLDivElement>(null);
   const [pill, setPill] = useState<{ left: number; width: number; opacity: number }>({ left: 0, width: 0, opacity: 0 });
   const [activeHash, setActiveHash] = useState<string>("");
-  const navigate = useNavigate();
-  const isAdminFn = useServerFn(checkIsAdmin);
-  const [user, setUser] = useState<{ email: string | null } | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    const refresh = async (session: { user: { email?: string | null } } | null) => {
-      if (!session) {
-        if (mounted) { setUser(null); setIsAdmin(false); }
-        return;
-      }
-      if (mounted) setUser({ email: session.user.email ?? null });
-      try {
-        const res = await isAdminFn({});
-        if (mounted) setIsAdmin(!!res.isAdmin);
-      } catch {
-        if (mounted) setIsAdmin(false);
-      }
-    };
-    supabase.auth.getSession().then(({ data }) => refresh(data.session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => refresh(session));
-    return () => { mounted = false; subscription.unsubscribe(); };
-  }, [isAdminFn]);
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setUserMenuOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
 
   useEffect(() => {
     const onScroll = () => {
@@ -179,50 +139,6 @@ export function Navbar() {
               </span>
             )}
           </button>
-          <div ref={userMenuRef} className="relative">
-            {user ? (
-              <>
-                <button
-                  onClick={() => setUserMenuOpen((o) => !o)}
-                  aria-label="Account"
-                  className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-surface/60 text-foreground transition-all hover:border-gold/50"
-                >
-                  <User className="h-4 w-4" />
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 overflow-hidden rounded-2xl border border-border/60 bg-surface shadow-xl">
-                    <div className="border-b border-border/60 px-4 py-3 text-xs text-muted-foreground truncate">
-                      {user.email}
-                    </div>
-                    {isAdmin && (
-                      <button
-                        onClick={() => { setUserMenuOpen(false); navigate({ to: "/admin/dashboard" }); }}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-surface-elevated/60"
-                      >
-                        <ShieldCheck className="h-4 w-4 text-gold" />
-                        Admin Dashboard
-                      </button>
-                    )}
-                    <button
-                      onClick={async () => { setUserMenuOpen(false); await supabase.auth.signOut(); }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-sm text-foreground hover:bg-surface-elevated/60"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Link
-                to="/admin/login"
-                aria-label="Sign in"
-                className="grid h-9 w-9 place-items-center rounded-full border border-border/60 bg-surface/60 text-muted-foreground transition-all hover:text-foreground hover:border-gold/50"
-              >
-                <User className="h-4 w-4" />
-              </Link>
-            )}
-          </div>
         </div>
       </div>
     </header>
