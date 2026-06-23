@@ -25,11 +25,15 @@ function AdminLogin() {
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
+      console.log("[admin/login] existing session check:", { hasSession: !!data.session });
       if (!data.session) return;
       try {
         const res = await isAdminFn({});
+        console.log("[admin/login] existing isAdmin result:", res);
         if (res.isAdmin) nav({ to: "/admin/dashboard" });
-      } catch {}
+      } catch (err) {
+        console.error("[admin/login] existing isAdmin error:", err);
+      }
     })();
   }, [nav, isAdminFn]);
 
@@ -38,6 +42,7 @@ function AdminLogin() {
     setBusy(true);
     try {
       if (mode === "signup") {
+        console.log("[admin/login] signing up:", email);
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -45,9 +50,14 @@ function AdminLogin() {
         });
         if (error) throw error;
       }
+      console.log("[admin/login] signing in:", email);
       const { error: sErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (sErr) throw sErr;
+      if (sErr) {
+        console.error("[admin/login] signInWithPassword error:", sErr);
+        throw sErr;
+      }
       const res = await isAdminFn({});
+      console.log("[admin/login] post-login isAdmin result:", res);
       if (!res.isAdmin) {
         await supabase.auth.signOut();
         toast.error("This account does not have admin access.");
@@ -56,6 +66,7 @@ function AdminLogin() {
       toast.success("Welcome back, admin.");
       nav({ to: "/admin/dashboard" });
     } catch (err) {
+      console.error("[admin/login] submit error:", err);
       toast.error((err as Error).message);
     } finally {
       setBusy(false);

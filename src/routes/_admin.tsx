@@ -23,20 +23,24 @@ function AdminLayout() {
     let cancelled = false;
     (async () => {
       const { data } = await supabase.auth.getSession();
+      console.log("[admin/layout] session check:", { hasSession: !!data.session });
       if (!data.session) {
         if (!cancelled) nav({ to: "/admin/login" });
         return;
       }
       try {
         const res = await isAdminFn({});
+        console.log("[admin/layout] checkIsAdmin result:", res);
         if (cancelled) return;
         if (!res.isAdmin) {
+          console.warn("[admin/layout] user is not admin, signing out");
           await supabase.auth.signOut();
           nav({ to: "/admin/login" });
         } else {
           setStatus("ok");
         }
-      } catch {
+      } catch (err) {
+        console.error("[admin/layout] checkIsAdmin error:", err);
         if (!cancelled) {
           await supabase.auth.signOut();
           nav({ to: "/admin/login" });
