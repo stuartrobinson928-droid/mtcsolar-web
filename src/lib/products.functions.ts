@@ -1,7 +1,22 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+async function requireAdmin(userId: string) {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("role", "admin")
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error("This account does not have admin access.");
+  }
+
+  return supabaseAdmin;
+}
 
 const productSchema = z.object({
   title: z.string().trim().min(1).max(200),
@@ -24,7 +39,8 @@ const productSchema = z.object({
 export const listProducts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
+    const supabaseAdmin = await requireAdmin(context.userId);
+    const { data, error } = await supabaseAdmin
       .from("products")
       .select("*")
       .order("created_at", { ascending: false });
@@ -36,7 +52,8 @@ export const createProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => productSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: row, error } = await context.supabase
+    const supabaseAdmin = await requireAdmin(context.userId);
+    const { data: row, error } = await supabaseAdmin
       .from("products")
       .insert(data)
       .select()
@@ -56,7 +73,8 @@ export const updateProduct = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), patch: productSchema.partial() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const supabaseAdmin = await requireAdmin(context.userId);
+    const { error } = await supabaseAdmin
       .from("products")
       .update({ ...data.patch, updated_at: new Date().toISOString() })
       .eq("id", data.id);
@@ -73,7 +91,8 @@ export const deleteProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("products").delete().eq("id", data.id);
+    const supabaseAdmin = await requireAdmin(context.userId);
+    const { error } = await supabaseAdmin.from("products").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     await supabaseAdmin.from("activity_log").insert({
       type: "product_deleted",
@@ -86,10 +105,11 @@ export const deleteProduct = createServerFn({ method: "POST" })
 export const adminSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const supabaseAdmin = await requireAdmin(context.userId);
     const [ordersRes, productsRes, activityRes] = await Promise.all([
-      context.supabase.from("orders").select("id,status,total_amount,created_at,order_number,customer_name").order("created_at", { ascending: false }).limit(200),
-      context.supabase.from("products").select("id,title,stock_quantity,status,updated_at"),
-      context.supabase.from("activity_log").select("*").order("created_at", { ascending: false }).limit(15),
+      supabaseAdmin.from("orders").select("id,status,total_amount,created_at,order_number,customer_name").order("created_at", { ascending: false }).limit(200),
+      supabaseAdmin.from("products").select("id,title,stock_quantity,status,updated_at"),
+      supabaseAdmin.from("activity_log").select("*").order("created_at", { ascending: false }).limit(15),
     ]);
     if (ordersRes.error) throw new Error(ordersRes.error.message);
     if (productsRes.error) throw new Error(productsRes.error.message);
@@ -124,12 +144,10 @@ export const adminSummary = createServerFn({ method: "GET" })
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", context.userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    if (error) return { isAdmin: false };
-    return { isAdmin: !!data };
+    try {
+      await requireAdmin(context.userId);
+      return { isAdmin: true };
+    } catch {
+      return { isAdmin: false };
+    }
   });
