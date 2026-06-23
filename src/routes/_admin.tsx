@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { checkIsAdmin } from "@/lib/products.functions";
 import { LayoutDashboard, Package, ShoppingBag, LogOut, ShieldCheck, Loader2 } from "lucide-react";
+import { AdminNotifications } from "@/components/AdminNotifications";
 
 export const Route = createFileRoute("/_admin")({
   head: () => ({
@@ -132,12 +133,15 @@ function AdminLayout() {
               );
             })}
           </nav>
-          <Link
-            to="/"
-            className="text-xs text-muted-foreground hover:text-gold"
-          >
-            ↗ View storefront
-          </Link>
+          <div className="flex items-center gap-3">
+            <AdminNotifications />
+            <Link
+              to="/"
+              className="text-xs text-muted-foreground hover:text-gold"
+            >
+              ↗ View storefront
+            </Link>
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
           <Outlet />

@@ -20,6 +20,7 @@ export function CheckoutModal() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [permanentAddress, setPermanentAddress] = useState("");
   const [city, setCity] = useState("");
   const [shipping, setShipping] = useState<"standard" | "express" | "install">("standard");
   const [pay, setPay] = useState<Pay>("bank");
@@ -99,6 +100,7 @@ export function CheckoutModal() {
           customer_phone: phone.trim(),
           city: city.trim(),
           delivery_address: address.trim(),
+          permanent_address: permanentAddress.trim() || null,
           notes: `Shipping: ${shipping}. Subtotal ${subtotal}, ship ${shipCost}, tax ${tax}, total ${grand}`,
           payment_method: payToDb(pay),
           items: items.map(({ product, qty }) => ({
@@ -219,6 +221,7 @@ export function CheckoutModal() {
                     <FloatField label="Phone (e.g. 03xx-xxxxxxx)" value={phone} onChange={setPhone} />
                     <FloatField label="City" value={city} onChange={setCity} />
                     <FloatField label="Detailed shipping address" value={address} onChange={setAddress} className="sm:col-span-2" textarea />
+                    <FloatField label="Permanent address (optional)" value={permanentAddress} onChange={setPermanentAddress} className="sm:col-span-2" textarea />
                   </div>
                 </div>
               )}
