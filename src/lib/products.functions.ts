@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 async function requireAdmin(userId: string) {
+  console.log("[products.functions] requireAdmin called for user:", userId);
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("user_roles")
@@ -11,7 +12,9 @@ async function requireAdmin(userId: string) {
     .eq("role", "admin")
     .maybeSingle();
 
+  console.log("[products.functions] requireAdmin query result:", { data, error });
   if (error || !data) {
+    console.error("[products.functions] admin check failed:", { userId, error, data });
     throw new Error("This account does not have admin access.");
   }
 
