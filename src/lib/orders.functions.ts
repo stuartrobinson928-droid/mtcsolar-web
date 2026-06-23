@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const itemSchema = z.object({
@@ -25,6 +24,7 @@ const createOrderSchema = z.object({
 export const createOrder = createServerFn({ method: "POST" })
   .inputValidator((input) => createOrderSchema.parse(input))
   .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const total = data.items.reduce((s, i) => s + i.unit_price * i.quantity, 0);
     const { data: order, error } = await supabaseAdmin
       .from("orders")
@@ -81,18 +81,12 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum([
-          "pending",
-          "processing",
-          "confirmed",
-          "shipped",
-          "delivered",
-          "cancelled",
-        ]),
+        status: z.enum(["pending", "processing", "confirmed", "shipped", "delivered", "cancelled"]),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await context.supabase
       .from("orders")
       .update({ status: data.status, updated_at: new Date().toISOString() })
