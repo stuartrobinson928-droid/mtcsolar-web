@@ -14,7 +14,6 @@ const corporate = [
   { label: "Customer Support", href: "#contact" },
   { label: "Terms of Service", href: "#terms" },
   { label: "Privacy Policy", href: "#privacy" },
-  { label: "Admin Portal", href: "/admin" },
 ];
 
 const socials = [
