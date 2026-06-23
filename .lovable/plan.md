@@ -1,38 +1,15 @@
-The admin system is largely built. This pass closes the remaining gaps you flagged.
+## Seed the admin account so login works immediately
 
-## 1. Hidden admin entry point
-- Remove any storefront-visible admin link/icon (none should appear in navbar, footer, or mobile menu).
-- Keep `/admin/login` reachable only by typing the URL. No discovery from the storefront.
-- Verify `_admin` layout still redirects non-admins back to `/admin/login`.
+The credentials `awaismalik.Mtc1@gmail.com` / `awaismalik.Mtc1@` fail because no such user exists in Lovable Cloud yet — the auth logs show `invalid_credentials`. The DB trigger already grants the `admin` role automatically when this email signs up; we just need to create the user.
 
-## 2. Product detail page polish (`src/routes/product.$id.tsx`)
-- Large primary image + thumbnail gallery (click to swap, keyboard navigable).
-- Sections: description, technical specifications table, features list, tags.
-- Sale-price display (strike-through original + sale price) when present.
-- Stock badge: In stock / Low stock / Out of stock based on `stock_quantity`.
-- Sticky right-rail (desktop) with price, quantity stepper, Add to cart, WhatsApp inquiry button (pre-fills message with product title + URL).
-- Related products row (same category, excluding current).
-- Match existing dark/gold theme — no new colors.
+### Steps
 
-## 3. Admin notifications (`src/routes/_admin.tsx` + dashboard)
-- Poll `adminSummary` every 30s (already in place); add a bell icon in the admin top bar showing unseen counts for:
-  - new orders since last view (compare against `localStorage` last-seen order id),
-  - low-stock items (`stock_quantity < 5`).
-- Click bell → dropdown listing recent triggers, "Mark all read" clears the local marker.
-- Toast (sonner) when a new order arrives while admin is active.
-- No schema changes — purely client-side diffing against the polled summary.
+1. **Seed migration** — insert the admin user directly into `auth.users` with the hashed password and `email_confirmed_at` set, using `pgcrypto`'s `crypt(..., gen_salt('bf'))`. `ON CONFLICT (email) DO NOTHING` keeps it idempotent.
+2. **Ensure admin role row** — `INSERT INTO public.user_roles (user_id, role) SELECT id, 'admin' FROM auth.users WHERE lower(email) = lower('awaismalik.mtc1@gmail.com') ON CONFLICT DO NOTHING`, in case the trigger didn't fire for a pre-existing row.
+3. **Verify** — after migration runs, you sign in at `/admin/login` with the exact credentials from your spec.
 
-## 4. Checkout flow audit (`src/components/CheckoutModal.tsx` + `src/lib/orders.functions.ts`)
-- Confirm all required fields are collected and persisted: full name, email, phone, city, delivery address, permanent address (optional), notes (optional), payment method (cod / bank_transfer / easypaisa / jazzcash).
-- Add zod validation on the server fn input; show field-level errors in the modal.
-- On success: show order number on the confirmation step, clear cart, write activity_log entry.
-- Verify guest checkout works without auth (orders insert via service-role server fn — already the secure pattern).
+### Out of scope
 
-## 5. Verification
-- `bun run build` clean.
-- Playwright smoke: open `/product/<id>`, screenshot; open `/admin/login`, sign in, screenshot dashboard with bell.
-
-## Out of scope
-- No new tables, no schema migrations.
-- No changes to storefront branding, navbar, or theme tokens.
-- No header admin icon (per your choice — hidden URL only).
+- No code, route, or UI changes.
+- No new auth providers, no disabling signup.
+- Password is stored exactly as specified; you can change it later from the admin UI / auth settings.
