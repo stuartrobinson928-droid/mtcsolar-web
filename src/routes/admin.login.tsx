@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { checkIsAdmin } from "@/lib/products.functions";
 import { toast } from "sonner";
-import { Lock, Mail, Loader2, ShieldCheck } from "lucide-react";
+import { Lock, Mail, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
@@ -19,6 +19,7 @@ function AdminLogin() {
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [busy, setBusy] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const isAdminFn = useServerFn(checkIsAdmin);
 
   // If already signed in & admin, bounce to dashboard
@@ -102,13 +103,21 @@ function AdminLogin() {
             <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               required
-              type="password"
+              type={showPassword ? "text" : "password"}
               minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="block w-full rounded-2xl border border-border/60 bg-surface-elevated/40 pl-10 pr-3 py-3 text-sm outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/20"
+              className="block w-full rounded-2xl border border-border/60 bg-surface-elevated/40 pl-10 pr-10 py-3 text-sm outline-none focus:border-gold/60 focus:ring-2 focus:ring-gold/20"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-gold"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </label>
           <button
             disabled={busy}
