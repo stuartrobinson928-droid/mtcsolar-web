@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { checkIsAdmin } from "@/lib/products.functions";
 import { toast } from "sonner";
-import { Lock, Mail, Loader2, ShieldCheck } from "lucide-react";
+import { Lock, Mail, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/admin/login")({
   head: () => ({
