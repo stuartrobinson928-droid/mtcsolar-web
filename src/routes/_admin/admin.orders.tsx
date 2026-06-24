@@ -7,7 +7,7 @@ import { StatusBadge } from "./dashboard";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 
-export const Route = createFileRoute("/_admin/orders")({
+export const Route = createFileRoute("/_admin/admin/orders")({
   component: OrdersPage,
 });
 

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, X, Star } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/_admin/products")({
+export const Route = createFileRoute("/_admin/admin/products")({
   component: ProductsPage,
 });
 
