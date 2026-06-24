@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useReducer, useEffect, useState, type ReactNode } from "react";
 
-export type Category = "panel" | "inverter" | "battery";
+export type Category = "panel" | "inverter" | "battery" | "accessory";
 export interface Product {
   id: string;
   name: string;
@@ -65,7 +65,7 @@ interface Ctx {
   removeAll: (id: string) => void;
   setQty: (id: string, qty: number) => void;
   clear: () => void;
-  totals: { panels: number; inverters: number; batteries: number; kw: number; count: number };
+  totals: { panels: number; inverters: number; batteries: number; accessories: number; kw: number; count: number };
   cartOpen: boolean;
   openCart: () => void;
   closeCart: () => void;
@@ -85,14 +85,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [bounceKey, setBounceKey] = useState(0);
 
   const totals = useMemo(() => {
-    let panels = 0, inverters = 0, batteries = 0, panelW = 0, inverterW = 0;
+    let panels = 0, inverters = 0, batteries = 0, accessories = 0, panelW = 0, inverterW = 0;
     for (const { product, qty } of Object.values(state.items)) {
       if (product.category === "panel") { panels += qty; panelW += (product.watts ?? 0) * qty; }
       if (product.category === "inverter") { inverters += qty; inverterW += (product.watts ?? 0) * qty; }
       if (product.category === "battery") { batteries += qty; }
+      if (product.category === "accessory") { accessories += qty; }
     }
     const kw = Math.max(panelW, inverterW) / 1000;
-    return { panels, inverters, batteries, kw, count: panels + inverters + batteries };
+    return { panels, inverters, batteries, accessories, kw, count: panels + inverters + batteries + accessories };
   }, [state]);
 
   const items = useMemo(() => Object.values(state.items), [state]);
@@ -122,7 +123,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 export function priceFor(p: Product): number {
   if (typeof p.price === "number" && p.price > 0) return p.price;
   const w = p.watts ?? 0;
-  const ratePerW = p.category === "panel" ? 38 : p.category === "inverter" ? 55 : 42;
+  const ratePerW = p.category === "panel" ? 38 : p.category === "inverter" ? 55 : p.category === "battery" ? 42 : 0;
   const base = Math.round((w * ratePerW) / 100) * 100;
   return Math.max(base, 8500);
 }
