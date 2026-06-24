@@ -28,12 +28,23 @@ export interface InventoryResponse {
 }
 
 export async function fetchInventoryProducts(signal?: AbortSignal): Promise<InventoryResponse> {
-  const res = await fetch(`${BASE}/api/public/catalog/products`, {
-    signal,
-    headers: { accept: "application/json" },
-  });
-  if (!res.ok) {
-    throw new Error(`Inventory API returned ${res.status}`);
+  const pageSize = 100;
+  let page = 1;
+  const all: InventoryProduct[] = [];
+  let total = 0;
+  // Inventory API caps pageSize at 100; loop through pages until we have everything.
+  // Hard safety cap of 50 pages (5,000 products).
+  while (page <= 50) {
+    const res = await fetch(
+      `${BASE}/api/public/catalog/products?pageSize=${pageSize}&page=${page}`,
+      { signal, headers: { accept: "application/json" } },
+    );
+    if (!res.ok) throw new Error(`Inventory API returned ${res.status}`);
+    const json = (await res.json()) as InventoryResponse & { page?: number; pageSize?: number };
+    total = json.total ?? all.length + json.products.length;
+    all.push(...json.products);
+    if (all.length >= total || json.products.length < pageSize) break;
+    page += 1;
   }
-  return (await res.json()) as InventoryResponse;
+  return { products: all, total };
 }
