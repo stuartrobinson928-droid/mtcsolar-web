@@ -4,8 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { listProducts, createProduct, updateProduct, deleteProduct } from "@/lib/products.functions";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, X, Star } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Star, ImageIcon, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/image-compress";
 
 export const Route = createFileRoute("/_admin/admin/products")({
   component: ProductsPage,
@@ -70,9 +71,18 @@ function ProductsPage() {
     });
   };
 
-  const upload = async (file: File): Promise<string> => {
+  const upload = async (rawFile: File): Promise<string> => {
+    const file = await compressImage(rawFile, { maxDim: 1200, quality: 0.82 });
+    const saved = Math.max(0, rawFile.size - file.size);
+    if (saved > 1024) {
+      const pct = Math.round((saved / rawFile.size) * 100);
+      toast.success(`Compressed ${(rawFile.size / 1024).toFixed(0)}KB → ${(file.size / 1024).toFixed(0)}KB (-${pct}%)`);
+    }
     const path = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-    const { error } = await supabase.storage.from("product-images").upload(path, file, { upsert: false });
+    const { error } = await supabase.storage.from("product-images").upload(path, file, {
+      upsert: false,
+      contentType: file.type,
+    });
     if (error) throw error;
     const { data } = supabase.storage.from("product-images").getPublicUrl(path);
     return data.publicUrl;
@@ -83,7 +93,7 @@ function ProductsPage() {
     setUploading(true);
     try { setForm({ ...form, image_url: await upload(f) }); }
     catch (err) { toast.error((err as Error).message); }
-    finally { setUploading(false); }
+    finally { setUploading(false); e.target.value = ""; }
   };
   const onGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fs = Array.from(e.target.files || []); if (!fs.length || !form) return;
@@ -93,7 +103,13 @@ function ProductsPage() {
       const cur = form.gallery.split("\n").filter(Boolean);
       setForm({ ...form, gallery: [...cur, ...urls].join("\n") });
     } catch (err) { toast.error((err as Error).message); }
-    finally { setUploading(false); }
+    finally { setUploading(false); e.target.value = ""; }
+  };
+
+  const removeGalleryItem = (url: string) => {
+    if (!form) return;
+    const cur = form.gallery.split("\n").map((s) => s.trim()).filter((s) => s && s !== url);
+    setForm({ ...form, gallery: cur.join("\n") });
   };
 
   const save = async () => {
