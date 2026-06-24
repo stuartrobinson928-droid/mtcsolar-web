@@ -1,42 +1,72 @@
-# Why we should NOT copy lalamobiles' `package.json`
+# Live inventory handshake with MTC Energy Collective
 
-The two projects are on completely different stacks. Copying that `package.json` here would not "remove build errors" — it would break this app on boot.
+The inventory admin lives in a separate Lovable project ("MTC Energy Collective") with its own Supabase backend (`shwqajucathhxbvpbzxo`). Its `public.products` table has: `name, category, company, specifications, quantity, cost_price, selling_price, low_stock_threshold, status`.
 
-| Area | lalamobiles (working) | This project |
-|---|---|---|
-| Framework | Vite 5 + plain React SPA | **TanStack Start** (SSR + server fns + Nitro) |
-| React | 18.3 | **19** |
-| Routing | `react-router-dom` v6 | `@tanstack/react-router` (file-based, generated route tree) |
-| Tailwind | v3 + `tailwind.config.ts` + `autoprefixer` + `postcss` | **v4** via `@import` in `src/styles.css` (no config file, no postcss) |
-| Build | `vite build` | `@lovable.dev/vite-tanstack-config` + `nitro/vite` (Vercel target) |
-| Auth/server | `@lovable.dev/cloud-auth-js` client-side | `createServerFn` + `requireSupabaseAuth` middleware |
+The storefront will read **directly** from that database as the single source of truth.
 
-Our routes (`src/routes/*`, `routeTree.gen.ts`), server functions (`src/lib/*.functions.ts`), SSR entry (`src/server.ts`, `src/start.ts`), and Supabase integration files are all wired into the TanStack Start stack. Swapping in React 18 + react-router + Tailwind v3 + Vite 5 would invalidate every one of them.
+## 1. Open inventory DB for public reads (in the inventory project)
 
-# What I propose instead
+Today the `products` table only allows reads by authenticated users. To let an anonymous storefront read it, I'll add (over there, via a migration):
 
-Treat this as "find and fix the actual build errors," not a dependency swap.
+- `GRANT SELECT ON public.products TO anon;`
+- `CREATE POLICY "public read active products" ON public.products FOR SELECT TO anon USING (status = 'active');`
 
-## Steps
+Nothing about admin write access changes. Cost price stays hidden from the storefront by selecting only safe columns.
 
-1. **Reproduce the failing build locally** — run `bun run build` and `bun run build:dev`, capture the exact error output. (Last time both passed after the `orders.functions.ts` fix — I want to see the *current* failure, not guess.)
-2. **Categorize the failure** into one of:
-   - Server-only module leaking into the client graph (same class as the `client.server` import issue we just fixed) → fix by moving the import inside a `.handler()` via `await import(...)`.
-   - Missing route file referenced by a `<Link>` → create the route file.
-   - Type error from `routeTree.gen.ts` mismatch → align `createFileRoute("...")` strings with filenames.
-   - Missing dependency → `bun add` *that one* package (not 50).
-   - Syntax / JSX balance error in a recently edited file → patch in place.
-3. **Port only what's genuinely missing and compatible** from lalamobiles, if anything. Candidates that are safe to add here on demand (only if a component actually needs them):
-   - Radix primitives we don't yet have (e.g. `@radix-ui/react-dialog`, `-dropdown-menu`, `-popover`) — these are version-agnostic.
-   - `sonner`, `lucide-react`, `react-hook-form`, `@hookform/resolvers`, `zod`, `clsx`, `tailwind-merge`, `class-variance-authority`, `cmdk` — all stack-neutral.
-   - `framer-motion` if we need animations.
-4. **Explicitly do NOT port:** `react-router-dom`, `react`/`react-dom` v18, `vite` v5, `tailwindcss` v3, `autoprefixer`, `postcss`, `@vitejs/plugin-react-swc`, `lovable-tagger`, `@lovable.dev/cloud-auth-js`, `next-themes`, `tailwindcss-animate`, `@tailwindcss/typography`. Each of these conflicts with our current stack.
-5. **Verify** with `bun run build` + `bun run build:dev` and a quick Playwright check on `/`, `/admin/login`, and `/_admin/dashboard` (with the injected admin session) before declaring it clean.
+> Note: I can only edit files in the inventory project if you switch to it, or I can hand you the exact SQL to paste. The rest below is all in **this** storefront project.
 
-## Deliverable
+## 2. Add a second Supabase client for the inventory DB
 
-A clean build (`bun run build` + `bun run build:dev` both green) with the existing TanStack Start architecture intact, plus a short note in chat listing exactly which error was fixed and which (if any) packages were added.
+New file `src/integrations/inventory/client.ts` — a publishable-key Supabase client pointing at `https://shwqajucathhxbvpbzxo.supabase.co`. URL + anon key go into `.env` as `VITE_INVENTORY_SUPABASE_URL` / `VITE_INVENTORY_SUPABASE_PUBLISHABLE_KEY` (anon keys are safe in the client bundle).
 
-## If you'd still rather migrate to the lalamobiles stack
+## 3. Fetch + map inventory rows to the storefront `Product` shape
 
-That's a separate, much larger project: rebuild every route under react-router, drop SSR/server functions, rewrite the admin auth flow client-side, downgrade React + Tailwind, and re-wire Supabase. I don't recommend it just to silence build errors — but say the word and I'll scope it as its own plan.
+New hook `src/hooks/use-inventory-products.ts` using TanStack Query:
+
+- `select('id, name, category, company, specifications, quantity, selling_price, low_stock_threshold, status')`
+- filter `status = 'active'`
+- map each row to the existing `Product` type:
+  - `id` ← uuid
+  - `name`, `series` ← company
+  - `category` ← normalized to `"panel" | "inverter" | "battery"` (substring match on inventory category text; rows that don't match are dropped)
+  - `watts` ← parsed from `specifications` (regex `(\d+)\s*W`) when present
+  - `tags` ← split from specifications (comma/semicolon), trimmed, capped at 3
+  - `image` ← local fallback by category (`panel.jpg` / `inverter.jpg` / `battery.jpg`) so we don't break the UI; later we can add an `image_url` column upstream
+- expose `price` (`selling_price`) and `stock` (`quantity`) alongside the product
+
+## 4. Wire storefront sections to live data
+
+Replace static imports from `src/data/products.ts` in:
+
+- `src/components/PanelsSection.tsx`
+- `src/components/InvertersSection.tsx` (split hybrid vs on-grid by tag/spec text)
+- `src/components/BatteriesSection.tsx` (split IP65 vs IP21 by tag/spec text)
+- `src/routes/product.$id.tsx`
+- `src/components/Hero.tsx` / anywhere else pulling from `allProducts`
+
+Each section uses the hook, shows a skeleton while loading, and an empty-state if the upstream returns nothing.
+
+`src/data/products.ts` stays only as a type re-export + image fallbacks; the hardcoded arrays go away.
+
+## 5. Out-of-stock behavior
+
+In `ProductCard` + product detail page:
+
+- When `stock <= 0`: show an "Out of stock" pill (replaces the category accent), and render the "Add to system" button **disabled** with label "Out of stock".
+- When `0 < stock <= low_stock_threshold`: small "Only N left" hint.
+- Cart `add()` ignores out-of-stock items defensively.
+
+Pricing on the cards/detail uses the live `selling_price` (PKR) from inventory instead of the derived `priceFor()` helper.
+
+## 6. Refresh cadence
+
+TanStack Query with `staleTime: 30s`, `refetchOnWindowFocus: true`. That keeps stock/price visibly fresh without hammering the DB.
+
+---
+
+## Technical notes
+
+- The storefront's own `/admin/products` page (this project's `products` table) becomes unused for the storefront read path. We can either (a) leave it as-is for now, (b) point it at the inventory DB too in a follow-up, or (c) remove it. **Default: leave it untouched this round** — say the word if you'd rather I deprecate or repurpose it.
+- No service-role keys leave either project. All cross-project access is anon + RLS-scoped to `status = 'active'`.
+- Cart `Product.id` becomes the inventory UUID. Any in-flight carts using the old slug IDs (e.g. `mustang-595`) will silently drop on next load — acceptable for a dev cutover.
+- Images: inventory has no image column today. Falling back per category is a temporary measure; the clean follow-up is to add `image_url text` upstream and surface a thumbnail uploader in the inventory admin.
