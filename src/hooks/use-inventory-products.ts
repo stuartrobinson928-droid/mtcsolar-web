@@ -111,7 +111,7 @@ async function fetchAllCatalog(): Promise<CatalogItem[]> {
       price: Number(row.selling_price ?? 0),
       stock,
       lowStockThreshold: 5,
-      visible: ovr?.visible ?? false,
+      visible: ovr?.visible ?? true,
       inventoryCategory: row.category,
       imageOverride: ovr?.image_url ?? null,
       categoryOverride: (ovr?.category_override as Category | null) ?? null,
