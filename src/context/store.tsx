@@ -9,6 +9,9 @@ export interface Product {
   tags: string[];
   image: string;
   series?: string;
+  price?: number;
+  stock?: number;
+  lowStockThreshold?: number;
 }
 
 interface CartItem { product: Product; qty: number }
@@ -117,6 +120,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
 // Pricing helper (PKR) — derived from watts/category to keep data file simple
 export function priceFor(p: Product): number {
+  if (typeof p.price === "number" && p.price > 0) return p.price;
   const w = p.watts ?? 0;
   const ratePerW = p.category === "panel" ? 38 : p.category === "inverter" ? 55 : 42;
   const base = Math.round((w * ratePerW) / 100) * 100;
