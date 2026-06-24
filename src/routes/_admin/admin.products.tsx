@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Search, Upload, ImageOff, X, Save, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,8 +67,7 @@ function ProductsPage() {
   );
 
   // Reset to page 1 when filters change
-  const filterKey = `${q}|${cat}|${onlyVisible}`;
-  useMemo(() => { setPage(1); }, [filterKey]);
+  useEffect(() => { setPage(1); }, [q, cat, onlyVisible]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["catalog"] });
