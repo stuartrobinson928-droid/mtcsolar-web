@@ -181,7 +181,11 @@ function ProductsPage() {
               <tr key={p.id} className="hover:bg-surface-elevated/40">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    {p.image_url ? <img src={p.image_url} alt="" className="h-10 w-10 rounded-lg object-cover" /> : <div className="h-10 w-10 rounded-lg bg-surface-elevated" />}
+                    {p.image_url ? (
+                      <img src={p.image_url} alt="" loading="lazy" className="h-12 w-12 flex-none rounded-lg object-cover ring-1 ring-border/60" />
+                    ) : (
+                      <div className="grid h-12 w-12 flex-none place-items-center rounded-lg bg-surface-elevated text-muted-foreground"><ImageIcon className="h-4 w-4" /></div>
+                    )}
                     <div className="min-w-0">
                       <p className="truncate font-medium flex items-center gap-1.5">{p.title} {p.featured && <Star className="h-3 w-3 fill-gold text-gold" />}</p>
                       <p className="truncate text-[11px] text-muted-foreground">{p.brand} {p.model_number}</p>
@@ -205,49 +209,93 @@ function ProductsPage() {
       </div>
 
       {form && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[80] flex justify-end">
           <div className="absolute inset-0 bg-background/70 backdrop-blur" onClick={() => setForm(null)} />
-          <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-border/60 bg-surface shadow-gold">
-            <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border/60 bg-surface px-5 py-4">
-              <h2 className="font-display text-lg font-semibold">{form.id ? "Edit product" : "Add product"}</h2>
-              <button onClick={() => setForm(null)} className="grid h-9 w-9 place-items-center rounded-full border border-border/60 text-muted-foreground"><X className="h-4 w-4" /></button>
-            </header>
-            <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
-              <FInput label="Title" v={form.title} onChange={(v: string) => setForm({ ...form, title: v })} className="sm:col-span-2" />
-              <FSel label="Category" v={form.category} options={CATEGORIES as any} onChange={(v) => setForm({ ...form, category: v as any })} />
-              <FSel label="Status" v={form.status} options={STATUSES as any} onChange={(v) => setForm({ ...form, status: v as any })} />
-              <FInput label="Brand" v={form.brand} onChange={(v) => setForm({ ...form, brand: v })} />
-              <FInput label="Model #" v={form.model_number} onChange={(v) => setForm({ ...form, model_number: v })} />
-              <FInput label="Price (Rs)" v={form.price} type="number" onChange={(v) => setForm({ ...form, price: v })} />
-              <FInput label="Sale Price (Rs)" v={form.sale_price} type="number" onChange={(v) => setForm({ ...form, sale_price: v })} />
-              <FInput label="Stock Qty" v={form.stock_quantity} type="number" onChange={(v) => setForm({ ...form, stock_quantity: v })} />
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="accent-[var(--gold)]" />
-                Featured product
-              </label>
-              <FTA label="Description" v={form.description} onChange={(v) => setForm({ ...form, description: v })} className="sm:col-span-2" />
-              <FTA label="Features (one per line)" v={form.features} onChange={(v) => setForm({ ...form, features: v })} className="sm:col-span-2" />
-              <FInput label="Tags (comma separated)" v={form.tags} onChange={(v) => setForm({ ...form, tags: v })} className="sm:col-span-2" />
-
-              <div className="sm:col-span-2">
-                <p className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">Main image</p>
-                <div className="flex items-center gap-3">
-                  {form.image_url && <img src={form.image_url} alt="" className="h-16 w-16 rounded-xl object-cover" />}
-                  <input type="file" accept="image/*" onChange={onMainUpload} className="text-xs" />
-                  <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="or paste URL" className="flex-1 rounded-xl border border-border/60 bg-surface-elevated/40 px-3 py-2 text-xs" />
-                </div>
+          <div className="relative flex h-full w-full max-w-2xl flex-col border-l border-border/60 bg-surface shadow-gold animate-in slide-in-from-right duration-200">
+            <header className="flex items-center justify-between border-b border-border/60 px-6 py-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-widest text-gold">{form.id ? "Editing" : "New"}</p>
+                <h2 className="font-display text-lg font-semibold">{form.id ? form.title || "Edit product" : "Add product"}</h2>
               </div>
-              <div className="sm:col-span-2">
-                <p className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">Gallery (URLs, one per line)</p>
-                <input type="file" accept="image/*" multiple onChange={onGalleryUpload} className="mb-2 text-xs" />
-                <textarea value={form.gallery} onChange={(e) => setForm({ ...form, gallery: e.target.value })} rows={3} className="w-full rounded-xl border border-border/60 bg-surface-elevated/40 px-3 py-2 text-xs" />
+              <button onClick={() => setForm(null)} className="grid h-9 w-9 place-items-center rounded-full border border-border/60 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+            </header>
+
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              <section className="mb-6">
+                <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">Main image</p>
+                <div className="flex items-start gap-4">
+                  <label className="group relative grid h-32 w-32 flex-none cursor-pointer place-items-center overflow-hidden rounded-2xl border border-dashed border-border/60 bg-surface-elevated/40 hover:border-gold/60">
+                    {form.image_url ? (
+                      <>
+                        <img src={form.image_url} alt="" className="h-full w-full object-cover" />
+                        <div className="absolute inset-0 grid place-items-center bg-background/60 opacity-0 group-hover:opacity-100 transition">
+                          <Upload className="h-5 w-5 text-gold" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                        <Upload className="h-5 w-5" />
+                        <span className="text-[10px] uppercase tracking-wider">Upload</span>
+                      </div>
+                    )}
+                    <input type="file" accept="image/*" onChange={onMainUpload} className="hidden" />
+                  </label>
+                  <div className="flex-1 space-y-2">
+                    <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="https://… or upload" className="w-full rounded-xl border border-border/60 bg-surface-elevated/40 px-3 py-2 text-xs" />
+                    <p className="text-[10px] text-muted-foreground">Auto-compressed to WebP, max 1200px on long edge.</p>
+                    {form.image_url && (
+                      <button type="button" onClick={() => setForm({ ...form, image_url: "" })} className="text-[11px] text-rose-400 hover:underline">Remove image</button>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section className="mb-6">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground">Gallery</p>
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-gold hover:underline">
+                    <Upload className="h-3 w-3" /> Add images
+                    <input type="file" accept="image/*" multiple onChange={onGalleryUpload} className="hidden" />
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {form.gallery.split("\n").map((s) => s.trim()).filter(Boolean).map((url) => (
+                    <div key={url} className="group relative h-20 w-20 overflow-hidden rounded-xl border border-border/60">
+                      <img src={url} alt="" className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => removeGalleryItem(url)} className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-background/80 text-rose-400 opacity-0 group-hover:opacity-100"><X className="h-3 w-3" /></button>
+                    </div>
+                  ))}
+                  {!form.gallery.trim() && <p className="text-[11px] text-muted-foreground">No gallery images yet.</p>}
+                </div>
+              </section>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FInput label="Title" v={form.title} onChange={(v: string) => setForm({ ...form, title: v })} className="sm:col-span-2" />
+                <FSel label="Category" v={form.category} options={CATEGORIES as any} onChange={(v) => setForm({ ...form, category: v as any })} />
+                <FSel label="Status" v={form.status} options={STATUSES as any} onChange={(v) => setForm({ ...form, status: v as any })} />
+                <FInput label="Brand" v={form.brand} onChange={(v) => setForm({ ...form, brand: v })} />
+                <FInput label="Model #" v={form.model_number} onChange={(v) => setForm({ ...form, model_number: v })} />
+                <FInput label="Price (Rs)" v={form.price} type="number" onChange={(v) => setForm({ ...form, price: v })} />
+                <FInput label="Sale Price (Rs)" v={form.sale_price} type="number" onChange={(v) => setForm({ ...form, sale_price: v })} />
+                <FInput label="Stock Qty" v={form.stock_quantity} type="number" onChange={(v) => setForm({ ...form, stock_quantity: v })} />
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} className="accent-[var(--gold)]" />
+                  Featured product
+                </label>
+                <FTA label="Description" v={form.description} onChange={(v) => setForm({ ...form, description: v })} className="sm:col-span-2" />
+                <FTA label="Features (one per line)" v={form.features} onChange={(v) => setForm({ ...form, features: v })} className="sm:col-span-2" />
+                <FInput label="Tags (comma separated)" v={form.tags} onChange={(v) => setForm({ ...form, tags: v })} className="sm:col-span-2" />
               </div>
             </div>
-            <footer className="sticky bottom-0 flex justify-end gap-2 border-t border-border/60 bg-surface px-5 py-3">
-              <button onClick={() => setForm(null)} className="rounded-full border border-border/60 px-4 py-2 text-xs text-muted-foreground hover:text-foreground">Cancel</button>
-              <button onClick={save} disabled={uploading} className="rounded-full bg-gold-gradient px-5 py-2 text-xs font-semibold text-background shadow-gold disabled:opacity-60">
-                {form.id ? "Save changes" : "Create product"}
-              </button>
+
+            <footer className="flex items-center justify-between gap-2 border-t border-border/60 bg-surface px-6 py-3">
+              <p className="text-[11px] text-muted-foreground">{uploading ? "Uploading image…" : ""}</p>
+              <div className="flex gap-2">
+                <button onClick={() => setForm(null)} className="rounded-full border border-border/60 px-4 py-2 text-xs text-muted-foreground hover:text-foreground">Cancel</button>
+                <button onClick={save} disabled={uploading} className="rounded-full bg-gold-gradient px-5 py-2 text-xs font-semibold text-background shadow-gold disabled:opacity-60">
+                  {form.id ? "Save changes" : "Create product"}
+                </button>
+              </div>
             </footer>
           </div>
         </div>
