@@ -1,72 +1,66 @@
-# Live inventory handshake with MTC Energy Collective
+## Switching to the inventory project's public REST endpoint
 
-The inventory admin lives in a separate Lovable project ("MTC Energy Collective") with its own Supabase backend (`shwqajucathhxbvpbzxo`). Its `public.products` table has: `name, category, company, specifications, quantity, cost_price, selling_price, low_stock_threshold, status`.
+You've exposed a server-side endpoint on the inventory project:
 
-The storefront will read **directly** from that database as the single source of truth.
+```
+GET https://project--feac0274-c0f1-4b72-9f19-af992b2c0758(-dev).lovable.app/api/public/catalog/products
+```
 
-## 1. Open inventory DB for public reads (in the inventory project)
+I tested it — it returns clean JSON with the four categories already labeled (`Batteries`, `Inverters`, `Solar Panels`, `Accessories`) and only safe fields (no cost price). This is strictly better than the direct-Supabase approach, so I'm dropping the cross-project DB client entirely.
 
-Today the `products` table only allows reads by authenticated users. To let an anonymous storefront read it, I'll add (over there, via a migration):
+## Changes in this project
 
-- `GRANT SELECT ON public.products TO anon;`
-- `CREATE POLICY "public read active products" ON public.products FOR SELECT TO anon USING (status = 'active');`
+### 1. Remove the old cross-project Supabase client
 
-Nothing about admin write access changes. Cost price stays hidden from the storefront by selecting only safe columns.
+- Delete `src/integrations/inventory/client.ts`.
+- Remove `VITE_INVENTORY_SUPABASE_URL` and `VITE_INVENTORY_SUPABASE_PUBLISHABLE_KEY` from `.env`.
 
-> Note: I can only edit files in the inventory project if you switch to it, or I can hand you the exact SQL to paste. The rest below is all in **this** storefront project.
+### 2. Add a tiny REST client for the inventory API
 
-## 2. Add a second Supabase client for the inventory DB
+New file `src/integrations/inventory/api.ts`:
 
-New file `src/integrations/inventory/client.ts` — a publishable-key Supabase client pointing at `https://shwqajucathhxbvpbzxo.supabase.co`. URL + anon key go into `.env` as `VITE_INVENTORY_SUPABASE_URL` / `VITE_INVENTORY_SUPABASE_PUBLISHABLE_KEY` (anon keys are safe in the client bundle).
+- Exposes a typed `InventoryProduct` matching the endpoint's response shape (`id, name, category, model, capacity, product_type, warranty, specifications, selling_price, quantity, in_stock, status, created_at`).
+- `fetchInventoryProducts()` calls the endpoint and returns `{ products, total }`.
+- Base URL comes from `VITE_INVENTORY_API_URL` in `.env`. Default to the dev URL for now (`project--feac0274-...-dev.lovable.app`). You can flip it to the production URL after you publish the inventory project — single env-var change.
 
-## 3. Fetch + map inventory rows to the storefront `Product` shape
+### 3. Rewrite the catalog hook
 
-New hook `src/hooks/use-inventory-products.ts` using TanStack Query:
+Update `src/hooks/use-inventory-products.ts`:
 
-- `select('id, name, category, company, specifications, quantity, selling_price, low_stock_threshold, status')`
-- filter `status = 'active'`
-- map each row to the existing `Product` type:
-  - `id` ← uuid
-  - `name`, `series` ← company
-  - `category` ← normalized to `"panel" | "inverter" | "battery"` (substring match on inventory category text; rows that don't match are dropped)
-  - `watts` ← parsed from `specifications` (regex `(\d+)\s*W`) when present
-  - `tags` ← split from specifications (comma/semicolon), trimmed, capped at 3
-  - `image` ← local fallback by category (`panel.jpg` / `inverter.jpg` / `battery.jpg`) so we don't break the UI; later we can add an `image_url` column upstream
-- expose `price` (`selling_price`) and `stock` (`quantity`) alongside the product
+- Replace the Supabase query with `fetch` to the REST endpoint via TanStack Query (`staleTime: 30s`, `refetchOnWindowFocus: true`).
+- Map inventory categories directly to storefront categories:
+  - `"Solar Panels"` → `panel`
+  - `"Inverters"` → `inverter`
+  - `"Batteries"` / `"Batteries/Storage"` → `battery`
+  - `"Accessories"` → `accessory`
+  - Anything else → `null` (shows up as "Unmapped" in the admin so you can override).
+- Parse watts from `capacity` first, then `specifications` as fallback (regex for `kW`/`W`/`kWh`).
+- Tags from `specifications` if present, capped at 3.
+- Continue merging with the local `storefront_products` overrides table for visibility, image, category override, and sort order. That part of the design stays exactly the same — only the upstream data source changes.
 
-## 4. Wire storefront sections to live data
+### 4. No DB changes needed
 
-Replace static imports from `src/data/products.ts` in:
+- The local `storefront_products` table (visibility toggles, image uploads, category overrides) stays as-is.
+- No GRANT/policy work in the inventory project — your server route handles it.
 
-- `src/components/PanelsSection.tsx`
-- `src/components/InvertersSection.tsx` (split hybrid vs on-grid by tag/spec text)
-- `src/components/BatteriesSection.tsx` (split IP65 vs IP21 by tag/spec text)
-- `src/routes/product.$id.tsx`
-- `src/components/Hero.tsx` / anywhere else pulling from `allProducts`
+### 5. UI touch-ups (small)
 
-Each section uses the hook, shows a skeleton while loading, and an empty-state if the upstream returns nothing.
+- Update the admin `/admin/products` page's empty/loading copy to mention "Inventory API" instead of "Inventory DB", and surface the API base URL in a tiny footer note so you can confirm at a glance which environment you're pulling from.
+- Everything else (image uploader, toggle, sort order, category override drawer, storefront sections) keeps working unchanged because the merged shape going into the store is identical.
 
-`src/data/products.ts` stays only as a type re-export + image fallbacks; the hardcoded arrays go away.
+## Verification steps after build
 
-## 5. Out-of-stock behavior
+1. Open `/admin/products` → confirm all ~103 products load with category labels.
+2. Toggle a Panel, an Inverter, a Battery, and an Accessory visible. Upload an image for one.
+3. Open `/` → confirm each item appears in its correct section with the right price and stock.
+4. Mark one item out-of-stock upstream (or its qty hits 0) → confirm the "Out of stock" pill renders and the button is disabled.
 
-In `ProductCard` + product detail page:
+## One thing to do on your side later
 
-- When `stock <= 0`: show an "Out of stock" pill (replaces the category accent), and render the "Add to system" button **disabled** with label "Out of stock".
-- When `0 < stock <= low_stock_threshold`: small "Only N left" hint.
-- Cart `add()` ignores out-of-stock items defensively.
+When you publish the inventory project, ping me and I'll flip `VITE_INVENTORY_API_URL` from the `-dev` URL to the stable production URL. Until then the storefront reads from the dev build of the inventory project, which is fine for development but means published storefront → dev inventory. Worth doing the swap before you launch the storefront publicly.
 
-Pricing on the cards/detail uses the live `selling_price` (PKR) from inventory instead of the derived `priceFor()` helper.
+## Out of scope this round
 
-## 6. Refresh cadence
-
-TanStack Query with `staleTime: 30s`, `refetchOnWindowFocus: true`. That keeps stock/price visibly fresh without hammering the DB.
-
----
-
-## Technical notes
-
-- The storefront's own `/admin/products` page (this project's `products` table) becomes unused for the storefront read path. We can either (a) leave it as-is for now, (b) point it at the inventory DB too in a follow-up, or (c) remove it. **Default: leave it untouched this round** — say the word if you'd rather I deprecate or repurpose it.
-- No service-role keys leave either project. All cross-project access is anon + RLS-scoped to `status = 'active'`.
-- Cart `Product.id` becomes the inventory UUID. Any in-flight carts using the old slug IDs (e.g. `mustang-595`) will silently drop on next load — acceptable for a dev cutover.
-- Images: inventory has no image column today. Falling back per category is a temporary measure; the clean follow-up is to add `image_url text` upstream and surface a thumbnail uploader in the inventory admin.
+- Real-time updates (current 30s polling is fine).
+- Pagination/search on the admin list (we'll add it if the list gets unwieldy past 200+ items).
+- Per-product custom descriptions in the storefront (today the admin only overrides visibility, image, category; let me know if you want a `description_override` column too).
