@@ -1,14 +1,30 @@
-import { useState } from "react";
-import { invertersHybrid, invertersOnGrid } from "@/data/products";
+import { useMemo, useState } from "react";
 import { ProductCard } from "./ProductCard";
 import { Carousel } from "./Carousel";
-import { SectionHeader } from "./PanelsSection";
+import { SectionHeader, SectionSkeleton, EmptyState } from "./PanelsSection";
+import { useInventoryProducts } from "@/hooks/use-inventory-products";
+import type { Product } from "@/context/store";
 
 type Tab = "hybrid" | "ongrid";
 
+function isOnGrid(p: Product) {
+  const blob = `${p.name} ${p.tags.join(" ")}`.toLowerCase();
+  return blob.includes("on-grid") || blob.includes("on grid") || blob.includes("ongrid") || blob.includes("grid-tie");
+}
+function isHybrid(p: Product) {
+  const blob = `${p.name} ${p.tags.join(" ")}`.toLowerCase();
+  return blob.includes("hybrid") || blob.includes("off-grid") || (!isOnGrid(p));
+}
+
 export function InvertersSection() {
   const [tab, setTab] = useState<Tab>("hybrid");
-  const list = tab === "hybrid" ? invertersHybrid : invertersOnGrid;
+  const { data, isLoading } = useInventoryProducts();
+
+  const inverters = useMemo(() => (data ?? []).filter((p) => p.category === "inverter"), [data]);
+  const list = useMemo(
+    () => (tab === "ongrid" ? inverters.filter(isOnGrid) : inverters.filter((p) => !isOnGrid(p) && isHybrid(p))),
+    [tab, inverters],
+  );
 
   return (
     <section id="inverters" className="relative bg-surface-elevated/40 py-24">
@@ -38,11 +54,21 @@ export function InvertersSection() {
           ))}
         </div>
 
-        <Carousel>
-          {list.map((p) => (
-            <ProductCard key={p.id} product={p} accent={`${(p.watts ?? 0) / 1000}kW`} />
-          ))}
-        </Carousel>
+        {isLoading ? (
+          <SectionSkeleton />
+        ) : list.length === 0 ? (
+          <EmptyState label="No inverters in this category right now." />
+        ) : (
+          <Carousel>
+            {list.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                accent={p.watts ? `${(p.watts / 1000).toFixed(p.watts >= 10000 ? 0 : 1)}kW` : undefined}
+              />
+            ))}
+          </Carousel>
+        )}
       </div>
     </section>
   );

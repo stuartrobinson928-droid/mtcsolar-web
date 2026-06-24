@@ -1,9 +1,20 @@
+import { useMemo } from "react";
 import { Shield, Home } from "lucide-react";
-import { batteriesIndoor, batteriesOutdoor } from "@/data/products";
 import { ProductCard } from "./ProductCard";
-import { SectionHeader } from "./PanelsSection";
+import { SectionHeader, SectionSkeleton, EmptyState } from "./PanelsSection";
+import { useInventoryProducts } from "@/hooks/use-inventory-products";
+import type { Product } from "@/context/store";
+
+function matches(p: Product, needle: string) {
+  return `${p.name} ${p.tags.join(" ")}`.toLowerCase().includes(needle);
+}
 
 export function BatteriesSection() {
+  const { data, isLoading } = useInventoryProducts();
+  const batteries = useMemo(() => (data ?? []).filter((p) => p.category === "battery"), [data]);
+  const outdoor = batteries.filter((p) => matches(p, "ip65") || matches(p, "outdoor"));
+  const indoor = batteries.filter((p) => !outdoor.includes(p));
+
   return (
     <section id="batteries" className="relative py-24">
       <div className="mx-auto max-w-7xl px-6">
@@ -13,20 +24,26 @@ export function BatteriesSection() {
           subtitle="LFP cells, 6,000-cycle warranty, IP-rated enclosures for outdoor or indoor walls."
         />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <BatteryBlock
-            title="IP65 Weatherproof Storage"
-            badge="Outdoor Shield"
-            icon={<Shield className="h-4 w-4" />}
-            items={batteriesOutdoor}
-          />
-          <BatteryBlock
-            title="IP21 Indoor Lithium-ion"
-            badge="Wall Mount"
-            icon={<Home className="h-4 w-4" />}
-            items={batteriesIndoor}
-          />
-        </div>
+        {isLoading ? (
+          <SectionSkeleton />
+        ) : batteries.length === 0 ? (
+          <EmptyState label="No batteries available right now." />
+        ) : (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <BatteryBlock
+              title="IP65 Weatherproof Storage"
+              badge="Outdoor Shield"
+              icon={<Shield className="h-4 w-4" />}
+              items={outdoor}
+            />
+            <BatteryBlock
+              title="IP21 Indoor Lithium-ion"
+              badge="Wall Mount"
+              icon={<Home className="h-4 w-4" />}
+              items={indoor}
+            />
+          </div>
+        )}
       </div>
     </section>
   );
@@ -34,7 +51,7 @@ export function BatteriesSection() {
 
 function BatteryBlock({
   title, badge, icon, items,
-}: { title: string; badge: string; icon: React.ReactNode; items: typeof batteriesIndoor }) {
+}: { title: string; badge: string; icon: React.ReactNode; items: Product[] }) {
   return (
     <div className="rounded-3xl border border-border/60 bg-surface-elevated/60 p-6">
       <div className="mb-5 flex items-center justify-between">
@@ -43,11 +60,17 @@ function BatteryBlock({
           {icon} {badge}
         </span>
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {items.map((p) => (
-          <ProductCard key={p.id} product={p} />
-        ))}
-      </div>
+      {items.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-border/50 p-6 text-center text-xs text-muted-foreground">
+          Nothing in stock here right now.
+        </p>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {items.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
