@@ -23,6 +23,8 @@ const fmtPkr = (n: number) => "Rs " + Number(n || 0).toLocaleString("en-PK");
 
 type FilterCat = "all" | Category | "unmapped";
 
+const PAGE_SIZE = 15;
+
 function ProductsPage() {
   const qc = useQueryClient();
   const { data: items = [], isLoading } = useCatalog();
@@ -30,6 +32,7 @@ function ProductsPage() {
   const [cat, setCat] = useState<FilterCat>("all");
   const [onlyVisible, setOnlyVisible] = useState(false);
   const [editing, setEditing] = useState<CatalogItem | null>(null);
+  const [page, setPage] = useState(1);
 
   const counts = useMemo(() => {
     const out: Record<string, number> = { all: items.length, unmapped: 0, panel: 0, inverter: 0, battery: 0, accessory: 0, visible: 0 };
@@ -55,6 +58,17 @@ function ProductsPage() {
       );
     });
   }, [items, q, cat, onlyVisible]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paginated = useMemo(
+    () => filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE),
+    [filtered, safePage],
+  );
+
+  // Reset to page 1 when filters change
+  const filterKey = `${q}|${cat}|${onlyVisible}`;
+  useMemo(() => { setPage(1); }, [filterKey]);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["catalog"] });
@@ -112,9 +126,9 @@ function ProductsPage() {
         </div>
       </header>
 
-      {/* Filter bar */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-surface p-3 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
+      {/* Filter bar: search + category dropdown, fully responsive */}
+      <div className="grid gap-2 rounded-2xl border border-border/60 bg-surface p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+        <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             value={q}
@@ -123,24 +137,18 @@ function ProductsPage() {
             className="w-full rounded-xl border border-border/60 bg-surface-elevated/40 py-2 pl-9 pr-3 text-sm outline-none focus:border-gold/60"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {([
-            { id: "all", label: `All (${counts.all})` },
-            ...CATEGORIES.map((c) => ({ id: c.id, label: `${c.label} (${counts[c.id] ?? 0})` })),
-            { id: "unmapped", label: `Unmapped (${counts.unmapped})` },
-          ] as { id: FilterCat; label: string }[]).map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setCat(t.id)}
-              className={`rounded-full px-3 py-1.5 text-[11px] transition-colors ${
-                cat === t.id ? "bg-gold/15 text-gold ring-1 ring-gold/30" : "border border-border/60 text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t.label}
-            </button>
+        <select
+          value={cat}
+          onChange={(e) => setCat(e.target.value as FilterCat)}
+          className="rounded-xl border border-border/60 bg-surface-elevated/40 px-3 py-2 text-sm text-foreground outline-none focus:border-gold/60 w-full sm:w-auto"
+        >
+          <option value="all">All categories ({counts.all})</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.id} value={c.id}>{c.label} ({counts[c.id] ?? 0})</option>
           ))}
-        </div>
-        <label className="inline-flex flex-none cursor-pointer items-center gap-2 rounded-full border border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground">
+          <option value="unmapped">Unmapped ({counts.unmapped})</option>
+        </select>
+        <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-border/60 bg-surface-elevated/40 px-3 py-2 text-[11px] text-muted-foreground">
           <input type="checkbox" checked={onlyVisible} onChange={(e) => setOnlyVisible(e.target.checked)} className="accent-[var(--gold)]" />
           Visible only
         </label>
