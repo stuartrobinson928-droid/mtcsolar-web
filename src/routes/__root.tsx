@@ -1,16 +1,13 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
   createRootRouteWithContext,
   useRouter,
   useRouterState,
-  HeadContent,
-  Scripts,
 } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 
-import appCss from "../styles.css?url";
 import { StoreProvider, ThemeProvider } from "@/context/store";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -78,69 +75,30 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "MTC Solar | Premium Solar Store" },
-      { name: "description", content: "MTC Solar — premium solar panels, hybrid inverters and lithium storage." },
-      { property: "og:site_name", content: "MTC Solar" },
-      { property: "og:type", content: "website" },
-      { property: "og:title", content: "MTC Solar | Premium Solar Store" },
-      { name: "twitter:title", content: "MTC Solar | Premium Solar Store" },
-      { property: "og:description", content: "MTC Solar — premium solar panels, hybrid inverters and lithium storage." },
-      { name: "twitter:description", content: "MTC Solar — premium solar panels, hybrid inverters and lithium storage." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/1kiQpu6jQZVrWJsY8RgLBwhPjXm2/social-images/social-1779442379244-favicon.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/1kiQpu6jQZVrWJsY8RgLBwhPjXm2/social-images/social-1779442379244-favicon.webp" },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/favicon.png" },
-    ],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
 
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
-
 function RootComponent() {
-  const { queryClient } = Route.useRouteContext();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isAdmin = path.startsWith("/admin") || path.startsWith("/_admin");
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <StoreProvider>
-          <div className="relative min-h-screen bg-background text-foreground">
-            {!isAdmin && <ScrollProgress />}
-            {!isAdmin && <Navbar />}
-            {!isAdmin && <SideNav />}
-            <Outlet />
-            {!isAdmin && <Footer />}
-            {!isAdmin && <SummaryBar />}
-            {!isAdmin && <CartDrawer />}
-            {!isAdmin && <CheckoutModal />}
-            <Toaster position="top-right" theme="dark" />
-          </div>
-        </StoreProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <StoreProvider>
+        <div className="relative min-h-screen bg-background text-foreground">
+          {!isAdmin && <ScrollProgress />}
+          {!isAdmin && <Navbar />}
+          {!isAdmin && <SideNav />}
+          <Outlet />
+          {!isAdmin && <Footer />}
+          {!isAdmin && <SummaryBar />}
+          {!isAdmin && <CartDrawer />}
+          {!isAdmin && <CheckoutModal />}
+          <Toaster position="top-right" theme="dark" />
+        </div>
+      </StoreProvider>
+    </ThemeProvider>
   );
 }
