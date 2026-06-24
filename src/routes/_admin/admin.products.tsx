@@ -174,7 +174,7 @@ function ProductsPage() {
             {!isLoading && filtered.length === 0 && (
               <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No matches.</td></tr>
             )}
-            {filtered.map((it) => (
+            {paginated.map((it) => (
               <tr key={it.id} className="hover:bg-surface-elevated/40">
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
@@ -228,9 +228,40 @@ function ProductsPage() {
         </table>
       </div>
 
+      {/* Pagination */}
+      {filtered.length > 0 && (
+        <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <p className="text-[11px] text-muted-foreground">
+            Showing <span className="text-foreground">{(safePage - 1) * PAGE_SIZE + 1}</span>–
+            <span className="text-foreground">{Math.min(safePage * PAGE_SIZE, filtered.length)}</span> of{" "}
+            <span className="text-foreground">{filtered.length}</span>
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePage === 1}
+              className="rounded-full border border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <span className="px-3 py-1.5 text-[11px] text-muted-foreground">
+              Page <span className="text-foreground">{safePage}</span> / {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePage === totalPages}
+              className="rounded-full border border-border/60 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
       <p className="text-right text-[10px] text-muted-foreground">
         Source: <span className="font-mono">{INVENTORY_API_BASE}/api/public/catalog/products</span>
       </p>
+
 
       {editing && (
         <EditDrawer
