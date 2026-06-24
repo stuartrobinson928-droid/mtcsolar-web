@@ -1,39 +1,31 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useServerFn } from "@tanstack/react-start";
 import { checkIsAdmin } from "@/lib/products.functions";
 import { LayoutDashboard, Package, ShoppingBag, LogOut, ShieldCheck, Loader2 } from "lucide-react";
 import { AdminNotifications } from "@/components/AdminNotifications";
 
 export const Route = createFileRoute("/_admin")({
-  head: () => ({
-    meta: [{ title: "MTC Solar | Admin ERP Dashboard" }],
-  }),
   component: AdminLayout,
 });
 
 function AdminLayout() {
   const nav = useNavigate();
   const loc = useRouterState({ select: (s) => s.location.pathname });
-  const isAdminFn = useServerFn(checkIsAdmin);
   const [status, setStatus] = useState<"checking" | "ok" | "denied">("checking");
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data } = await supabase.auth.getSession();
-      console.log("[admin/layout] session check:", { hasSession: !!data.session });
       if (!data.session) {
         if (!cancelled) nav({ to: "/admin/login" });
         return;
       }
       try {
-        const res = await isAdminFn({});
-        console.log("[admin/layout] checkIsAdmin result:", res);
+        const res = await checkIsAdmin();
         if (cancelled) return;
         if (!res.isAdmin) {
-          console.warn("[admin/layout] user is not admin, signing out");
           await supabase.auth.signOut();
           nav({ to: "/admin/login" });
         } else {
@@ -50,7 +42,7 @@ function AdminLayout() {
     return () => {
       cancelled = true;
     };
-  }, [nav, isAdminFn]);
+  }, [nav]);
 
   if (status === "checking") {
     return (

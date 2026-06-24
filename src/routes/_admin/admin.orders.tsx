@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { listOrders, updateOrderStatus } from "@/lib/orders.functions";
 import { useState } from "react";
 import { StatusBadge } from "./admin.dashboard";
@@ -15,19 +14,17 @@ const fmt = (n: number) => "Rs " + Number(n || 0).toLocaleString("en-PK");
 const STATUSES = ["pending", "processing", "confirmed", "shipped", "delivered", "cancelled"] as const;
 
 function OrdersPage() {
-  const fn = useServerFn(listOrders);
-  const updateFn = useServerFn(updateOrderStatus);
   const qc = useQueryClient();
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["admin-orders"],
-    queryFn: () => fn({}),
+    queryFn: listOrders,
     refetchInterval: 30_000,
   });
   const [open, setOpen] = useState<any | null>(null);
 
   const setStatus = async (id: string, status: (typeof STATUSES)[number]) => {
     try {
-      await updateFn({ data: { id, status } });
+      await updateOrderStatus({ id, status });
       toast.success("Order updated");
       qc.invalidateQueries({ queryKey: ["admin-orders"] });
       qc.invalidateQueries({ queryKey: ["admin-summary"] });

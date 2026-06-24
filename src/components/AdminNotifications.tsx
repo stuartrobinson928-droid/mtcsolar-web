@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { adminSummary } from "@/lib/products.functions";
 import { Bell, AlertTriangle, ShoppingBag, X } from "lucide-react";
 import { toast } from "sonner";
@@ -8,10 +7,9 @@ import { toast } from "sonner";
 const SEEN_KEY = "mtc.admin.lastSeenOrderId";
 
 export function AdminNotifications() {
-  const fn = useServerFn(adminSummary);
   const { data } = useQuery({
     queryKey: ["admin-summary"],
-    queryFn: () => fn({}),
+    queryFn: adminSummary,
     refetchInterval: 30_000,
   });
   const [open, setOpen] = useState(false);
@@ -45,7 +43,7 @@ export function AdminNotifications() {
   const newOrders = useMemo(() => {
     if (!data?.recentOrders) return [];
     if (!lastSeen) return data.recentOrders.slice(0, 5);
-    const idx = data.recentOrders.findIndex((o) => o.id === lastSeen);
+    const idx = data.recentOrders.findIndex((o: any) => o.id === lastSeen);
     return idx === -1 ? data.recentOrders.slice(0, 5) : data.recentOrders.slice(0, idx);
   }, [data, lastSeen]);
 
@@ -106,7 +104,7 @@ export function AdminNotifications() {
             {newOrders.length > 0 && (
               <section className="px-2 py-2">
                 <p className="px-2 pb-1 text-[10px] uppercase tracking-widest text-muted-foreground">New orders</p>
-                {newOrders.map((o) => (
+                {newOrders.map((o: any) => (
                   <div key={o.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-surface-elevated/60">
                     <ShoppingBag className="mt-0.5 h-4 w-4 flex-none text-gold" />
                     <div className="min-w-0 flex-1">
@@ -121,7 +119,7 @@ export function AdminNotifications() {
             {lowStock.length > 0 && (
               <section className="border-t border-border/40 px-2 py-2">
                 <p className="px-2 pb-1 text-[10px] uppercase tracking-widest text-muted-foreground">Low stock</p>
-                {lowStock.slice(0, 6).map((p) => (
+                {lowStock.slice(0, 6).map((p: any) => (
                   <div key={p.id} className="flex items-start gap-3 rounded-xl px-2 py-2 hover:bg-surface-elevated/60">
                     <AlertTriangle className="mt-0.5 h-4 w-4 flex-none text-amber-400" />
                     <div className="min-w-0 flex-1">
