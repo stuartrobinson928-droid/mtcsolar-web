@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Search, Upload, ImageOff, X, Save, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useCatalog, type CatalogItem } from "@/hooks/use-inventory-products";
+import { useCatalog, type CatalogItem, INVENTORY_API_BASE } from "@/hooks/use-inventory-products";
 import { compressImage } from "@/lib/image-compress";
 import type { Category } from "@/context/store";
 
@@ -161,7 +161,7 @@ function ProductsPage() {
           </thead>
           <tbody className="divide-y divide-border/40">
             {isLoading && (
-              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">Loading inventory…</td></tr>
+              <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">Loading from Inventory API…</td></tr>
             )}
             {!isLoading && filtered.length === 0 && (
               <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">No matches.</td></tr>
@@ -219,6 +219,10 @@ function ProductsPage() {
           </tbody>
         </table>
       </div>
+
+      <p className="text-right text-[10px] text-muted-foreground">
+        Source: <span className="font-mono">{INVENTORY_API_BASE}/api/public/catalog/products</span>
+      </p>
 
       {editing && (
         <EditDrawer
