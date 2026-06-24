@@ -1,42 +1,18 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, Plus, Check, Sun, Zap, Battery, MessageCircle, Minus, ShieldCheck, Truck, BadgeCheck } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, Plus, Check, Sun, Zap, Battery, MessageCircle, Minus, ShieldCheck, Truck, BadgeCheck, Loader2 } from "lucide-react";
 import { useState } from "react";
-import { findProduct, allProducts } from "@/data/products";
 import { useStore, priceFor, type Product } from "@/context/store";
 import { ProductCard } from "@/components/ProductCard";
+import { useInventoryProducts, useInventoryProduct } from "@/hooks/use-inventory-products";
 
 export const Route = createFileRoute("/product/$id")({
-  loader: ({ params }) => {
-    const product = findProduct(params.id);
-    if (!product) throw notFound();
-    return { product };
-  },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.name} | MTC Solar | Premium Solar Store` },
-          { name: "description", content: `${loaderData.product.name} — ${loaderData.product.tags.join(", ")}` },
-          { property: "og:title", content: `${loaderData.product.name} | MTC Solar` },
-          { property: "og:image", content: loaderData.product.image },
-        ]
-      : [],
+  head: () => ({
+    meta: [
+      { title: "Product | MTC Solar | Premium Solar Store" },
+      { name: "description", content: "Premium solar hardware from MTC Solar — panels, inverters and lithium storage." },
+    ],
   }),
   component: ProductPage,
-  notFoundComponent: () => {
-    const { id } = Route.useParams();
-    return (
-      <div className="mx-auto max-w-7xl px-6 pt-32 pb-24 text-center">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-gold">404</p>
-        <h1 className="mt-3 font-display text-3xl font-semibold">Product "{id}" not found</h1>
-        <Link
-          to="/"
-          className="mt-6 inline-flex items-center gap-2 rounded-full border border-border/60 px-5 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:border-gold/50"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to catalog
-        </Link>
-      </div>
-    );
-  },
 });
 
 const categoryMeta: Record<Product["category"], { label: string; Icon: typeof Sun; unit: (w: number) => string }> = {
@@ -48,23 +24,54 @@ const categoryMeta: Record<Product["category"], { label: string; Icon: typeof Su
 const fmt = (n: number) => "Rs " + n.toLocaleString("en-PK");
 
 function ProductPage() {
-  const { product } = Route.useLoaderData() as { product: Product };
+  const { id } = Route.useParams();
+  const { data: product, isLoading, isError } = useInventoryProduct(id);
+  const { data: all } = useInventoryProducts();
   const { add, state } = useStore();
-  const meta = categoryMeta[product.category];
-  const inCart = (state.items[product.id]?.qty ?? 0) > 0;
-  const related = allProducts.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 3);
   const [qty, setQty] = useState(1);
   const [activeImg, setActiveImg] = useState(0);
-  const gallery = [product.image]; // catalog ships single image
+
+  if (isLoading) {
+    return (
+      <main className="grid min-h-[60vh] place-items-center pt-32">
+        <Loader2 className="h-6 w-6 animate-spin text-gold" />
+      </main>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 pt-32 pb-24 text-center">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-gold">404</p>
+        <h1 className="mt-3 font-display text-3xl font-semibold">Product not found</h1>
+        <Link
+          to="/"
+          className="mt-6 inline-flex items-center gap-2 rounded-full border border-border/60 px-5 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:border-gold/50"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> Back to catalog
+        </Link>
+      </div>
+    );
+  }
+
+  const meta = categoryMeta[product.category];
+  const inCart = (state.items[product.id]?.qty ?? 0) > 0;
+  const related = (all ?? []).filter((p) => p.category === product.category && p.id !== product.id).slice(0, 3);
+  const gallery = [product.image];
   const unitPrice = priceFor(product);
+  const stock = product.stock ?? 0;
+  const outOfStock = stock <= 0;
+  const lowStock = !outOfStock && stock <= (product.lowStockThreshold ?? 5);
 
   const addToCart = () => {
-    for (let i = 0; i < qty; i++) add(product);
+    if (outOfStock) return;
+    const max = Math.max(0, Math.min(qty, stock));
+    for (let i = 0; i < max; i++) add(product);
   };
 
   const whatsapp = () => {
     const msg = encodeURIComponent(
-      `Hi MTC Solar — I'd like more info on the ${product.name} (SKU ${product.id}). Pricing: ${fmt(unitPrice)}.`
+      `Hi MTC Solar — I'd like more info on the ${product.name} (SKU ${product.id}). Pricing: ${fmt(unitPrice)}.`,
     );
     window.open(`https://wa.me/923000000000?text=${msg}`, "_blank", "noopener");
   };
@@ -86,29 +93,20 @@ function ProductPage() {
               <img
                 src={gallery[activeImg]}
                 alt={product.name}
-                className="relative aspect-[4/3] w-full object-cover"
+                className={`relative aspect-[4/3] w-full object-cover ${outOfStock ? "grayscale" : ""}`}
               />
-              <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-400 ring-1 ring-emerald-500/30 backdrop-blur">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> In stock
-              </div>
+              {outOfStock ? (
+                <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-red-400 ring-1 ring-red-500/30 backdrop-blur">
+                  <span className="h-1.5 w-1.5 rounded-full bg-red-400" /> Out of stock
+                </div>
+              ) : (
+                <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-400 ring-1 ring-emerald-500/30 backdrop-blur">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                  {lowStock ? `Only ${stock} left` : "In stock"}
+                </div>
+              )}
             </div>
-            {gallery.length > 1 && (
-              <div className="mt-4 flex gap-3">
-                {gallery.map((src, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveImg(i)}
-                    className={`overflow-hidden rounded-xl border transition-all ${
-                      activeImg === i ? "border-gold ring-2 ring-gold/30" : "border-border/60 hover:border-gold/50"
-                    }`}
-                  >
-                    <img src={src} alt="" className="h-20 w-20 object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
 
-            {/* Specs + features panels */}
             <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
               <section className="rounded-2xl border border-border/60 bg-surface-elevated/40 p-5">
                 <h3 className="text-[10px] uppercase tracking-widest text-gold">Technical specs</h3>
@@ -170,21 +168,22 @@ function ProductPage() {
                 with our pre-sized inverter and storage stacks — no quote calls, no surprises.
               </p>
 
-              {/* Quantity stepper */}
               <div className="mt-8 flex items-center gap-4">
                 <div className="inline-flex items-center rounded-full border border-border/60 bg-surface-elevated/40">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
                     aria-label="Decrease quantity"
-                    className="grid h-10 w-10 place-items-center text-muted-foreground hover:text-foreground"
+                    disabled={outOfStock}
+                    className="grid h-10 w-10 place-items-center text-muted-foreground hover:text-foreground disabled:opacity-50"
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </button>
                   <span className="w-10 text-center font-mono text-sm tabular-nums">{qty}</span>
                   <button
-                    onClick={() => setQty((q) => q + 1)}
+                    onClick={() => setQty((q) => Math.min(stock || q + 1, q + 1))}
                     aria-label="Increase quantity"
-                    className="grid h-10 w-10 place-items-center text-muted-foreground hover:text-foreground"
+                    disabled={outOfStock || qty >= stock}
+                    className="grid h-10 w-10 place-items-center text-muted-foreground hover:text-foreground disabled:opacity-50"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>
@@ -197,10 +196,17 @@ function ProductPage() {
               <div className="mt-5 flex flex-col gap-3 sm:flex-row">
                 <button
                   onClick={addToCart}
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gold-gradient px-6 py-3 text-sm font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5"
+                  disabled={outOfStock}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gold-gradient px-6 py-3 text-sm font-semibold text-background shadow-gold transition-transform hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
                 >
-                  {inCart ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                  {inCart ? "Add another" : "Add to system"}
+                  {outOfStock ? (
+                    "Out of stock"
+                  ) : (
+                    <>
+                      {inCart ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                      {inCart ? "Add another" : "Add to system"}
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={whatsapp}
