@@ -25,8 +25,8 @@ export async function createOrder(input: CreateOrderInput) {
     _customer_phone: input.customer_phone,
     _city: input.city,
     _delivery_address: input.delivery_address,
-    _permanent_address: input.permanent_address ?? null,
-    _notes: input.notes ?? null,
+    _permanent_address: input.permanent_address ?? "",
+    _notes: input.notes ?? "",
     _payment_method: input.payment_method,
     _items: input.items,
   });

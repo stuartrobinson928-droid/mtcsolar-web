@@ -1,15 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useServerFn } from "@tanstack/react-start";
 import { checkIsAdmin } from "@/lib/products.functions";
 import { toast } from "sonner";
 import { Lock, Mail, Loader2, ShieldCheck, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/admin/login")({
-  head: () => ({
-    meta: [{ title: "MTC Solar | Admin Login" }],
-  }),
   component: AdminLogin,
 });
 
@@ -20,30 +16,26 @@ function AdminLogin() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const isAdminFn = useServerFn(checkIsAdmin);
 
   // If already signed in & admin, bounce to dashboard
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
-      console.log("[admin/login] existing session check:", { hasSession: !!data.session });
       if (!data.session) return;
       try {
-        const res = await isAdminFn({});
-        console.log("[admin/login] existing isAdmin result:", res);
+        const res = await checkIsAdmin();
         if (res.isAdmin) nav({ to: "/admin/dashboard" });
       } catch (err) {
         console.error("[admin/login] existing isAdmin error:", err);
       }
     })();
-  }, [nav, isAdminFn]);
+  }, [nav]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
       if (mode === "signup") {
-        console.log("[admin/login] signing up:", email);
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -51,14 +43,9 @@ function AdminLogin() {
         });
         if (error) throw error;
       }
-      console.log("[admin/login] signing in:", email);
       const { error: sErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (sErr) {
-        console.error("[admin/login] signInWithPassword error:", sErr);
-        throw sErr;
-      }
-      const res = await isAdminFn({});
-      console.log("[admin/login] post-login isAdmin result:", res);
+      if (sErr) throw sErr;
+      const res = await checkIsAdmin();
       if (!res.isAdmin) {
         await supabase.auth.signOut();
         toast.error("This account does not have admin access.");

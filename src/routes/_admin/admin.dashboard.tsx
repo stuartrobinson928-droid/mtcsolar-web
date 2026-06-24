@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { adminSummary } from "@/lib/products.functions";
 import { ShoppingBag, Clock, CheckCircle2, XCircle, Package, Banknote, AlertTriangle } from "lucide-react";
 
@@ -11,10 +10,9 @@ export const Route = createFileRoute("/_admin/admin/dashboard")({
 const fmt = (n: number) => "Rs " + Number(n || 0).toLocaleString("en-PK");
 
 function Dashboard() {
-  const fn = useServerFn(adminSummary);
   const { data, isLoading } = useQuery({
     queryKey: ["admin-summary"],
-    queryFn: () => fn({}),
+    queryFn: adminSummary,
     refetchInterval: 30_000,
   });
 
@@ -58,7 +56,7 @@ function Dashboard() {
             <p className="text-xs font-semibold uppercase tracking-wider">Low stock alert</p>
           </div>
           <ul className="text-sm">
-            {data.lowStock.slice(0, 6).map((p) => (
+            {data.lowStock.slice(0, 6).map((p: any) => (
               <li key={p.id} className="flex justify-between border-b border-border/40 py-1.5 last:border-0">
                 <span>{p.title}</span>
                 <span className="font-mono text-amber-400">{p.stock_quantity} left</span>
@@ -75,7 +73,7 @@ function Dashboard() {
             <p className="text-xs text-muted-foreground">No orders yet.</p>
           ) : (
             <ul className="divide-y divide-border/40">
-              {data.recentOrders.map((o) => (
+              {data.recentOrders.map((o: any) => (
                 <li key={o.id} className="flex items-center justify-between gap-3 py-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{o.order_number}</p>
@@ -95,7 +93,7 @@ function Dashboard() {
             <p className="text-xs text-muted-foreground">No activity yet.</p>
           ) : (
             <ul className="space-y-3">
-              {data.activity.map((a) => (
+              {data.activity.map((a: any) => (
                 <li key={a.id} className="flex items-start gap-3 text-sm">
                   <span className="mt-1.5 inline-block h-1.5 w-1.5 flex-none rounded-full bg-gold" />
                   <div className="min-w-0 flex-1">

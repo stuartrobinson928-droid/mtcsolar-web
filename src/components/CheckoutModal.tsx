@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { X, ArrowRight, ArrowLeft, Check, Download, Truck, User, Wallet, Banknote, Smartphone, ShieldCheck } from "lucide-react";
 import { priceFor, useStore } from "@/context/store";
-import { useServerFn } from "@tanstack/react-start";
 import { createOrder } from "@/lib/orders.functions";
 import { toast } from "sonner";
 
@@ -14,7 +13,6 @@ const payToDb = (p: Pay): "bank_transfer" | "cod" | "easypaisa" | "jazzcash" =>
 
 export function CheckoutModal() {
   const { checkoutOpen, closeCheckout, items, totals, clear } = useStore();
-  const createOrderFn = useServerFn(createOrder);
   const [step, setStep] = useState<Step>(0);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -93,23 +91,21 @@ export function CheckoutModal() {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const res = await createOrderFn({
-        data: {
-          customer_name: name.trim(),
-          customer_email: email.trim(),
-          customer_phone: phone.trim(),
-          city: city.trim(),
-          delivery_address: address.trim(),
-          permanent_address: permanentAddress.trim() || null,
-          notes: `Shipping: ${shipping}. Subtotal ${subtotal}, ship ${shipCost}, tax ${tax}, total ${grand}`,
-          payment_method: payToDb(pay),
-          items: items.map(({ product, qty }) => ({
-            product_id: null,
-            product_name: product.name,
-            quantity: qty,
-            unit_price: priceFor(product),
-          })),
-        },
+      const res = await createOrder({
+        customer_name: name.trim(),
+        customer_email: email.trim(),
+        customer_phone: phone.trim(),
+        city: city.trim(),
+        delivery_address: address.trim(),
+        permanent_address: permanentAddress.trim() || null,
+        notes: `Shipping: ${shipping}. Subtotal ${subtotal}, ship ${shipCost}, tax ${tax}, total ${grand}`,
+        payment_method: payToDb(pay),
+        items: items.map(({ product, qty }) => ({
+          product_id: null,
+          product_name: product.name,
+          quantity: qty,
+          unit_price: priceFor(product),
+        })),
       });
       setOrderId(res.order_number);
       toast.success("Order placed: " + res.order_number);
