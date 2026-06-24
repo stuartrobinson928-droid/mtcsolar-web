@@ -200,6 +200,42 @@ export type Database = {
         }
         Relationships: []
       }
+      storefront_products: {
+        Row: {
+          category_override:
+            | Database["public"]["Enums"]["storefront_category"]
+            | null
+          created_at: string
+          image_url: string | null
+          inventory_id: string
+          sort_order: number
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          category_override?:
+            | Database["public"]["Enums"]["storefront_category"]
+            | null
+          created_at?: string
+          image_url?: string | null
+          inventory_id: string
+          sort_order?: number
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          category_override?:
+            | Database["public"]["Enums"]["storefront_category"]
+            | null
+          created_at?: string
+          image_url?: string | null
+          inventory_id?: string
+          sort_order?: number
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -246,6 +282,7 @@ export type Database = {
       payment_method: "cod" | "bank_transfer" | "easypaisa" | "jazzcash"
       product_category: "panel" | "inverter" | "battery" | "accessory"
       product_status: "active" | "out_of_stock" | "draft" | "hidden"
+      storefront_category: "panel" | "inverter" | "battery" | "accessory"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -385,6 +422,7 @@ export const Constants = {
       payment_method: ["cod", "bank_transfer", "easypaisa", "jazzcash"],
       product_category: ["panel", "inverter", "battery", "accessory"],
       product_status: ["active", "out_of_stock", "draft", "hidden"],
+      storefront_category: ["panel", "inverter", "battery", "accessory"],
     },
   },
 } as const

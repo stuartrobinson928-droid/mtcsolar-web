@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Plus, Check, Sun, Zap, Battery, MessageCircle, Minus, ShieldCheck, Truck, BadgeCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Check, Sun, Zap, Battery, Wrench, MessageCircle, Minus, ShieldCheck, Truck, BadgeCheck, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useStore, priceFor, type Product } from "@/context/store";
 import { ProductCard } from "@/components/ProductCard";
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/product/$id")({
   head: () => ({
     meta: [
       { title: "Product | MTC Solar | Premium Solar Store" },
-      { name: "description", content: "Premium solar hardware from MTC Solar — panels, inverters and lithium storage." },
+      { name: "description", content: "Premium solar hardware from MTC Solar — panels, inverters, lithium storage and accessories." },
     ],
   }),
   component: ProductPage,
@@ -19,6 +19,7 @@ const categoryMeta: Record<Product["category"], { label: string; Icon: typeof Su
   panel: { label: "Photovoltaic Panel", Icon: Sun, unit: (w) => `${w} W` },
   inverter: { label: "Power Inverter", Icon: Zap, unit: (w) => `${(w / 1000).toFixed(1)} kW` },
   battery: { label: "Lithium Storage", Icon: Battery, unit: (w) => `${(w / 1000).toFixed(2)} kWh` },
+  accessory: { label: "Accessory", Icon: Wrench, unit: (w) => `${w} W` },
 };
 
 const fmt = (n: number) => "Rs " + n.toLocaleString("en-PK");
