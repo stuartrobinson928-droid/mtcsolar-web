@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listOrders, updateOrderStatus } from "@/lib/orders.functions";
 import { useState } from "react";
-import { StatusBadge } from "./dashboard";
+import { StatusBadge } from "./admin.dashboard";
 import { toast } from "sonner";
 import { X } from "lucide-react";
 
