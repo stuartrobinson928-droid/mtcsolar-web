@@ -85,34 +85,25 @@ export function CheckoutModal() {
   const back = () => setStep((s) => (Math.max(0, s - 1)) as Step);
 
   const downloadInvoice = () => {
-    const lines: string[] = [];
-    lines.push("MTC SOLAR — TAX INVOICE");
-    lines.push("Order: " + orderId);
-    lines.push("Date: " + new Date().toLocaleString());
-    lines.push("");
-    lines.push("Customer: " + name);
-    lines.push("Email: " + email);
-    lines.push("Phone: " + phone);
-    lines.push("Address: " + address + ", " + city);
-    lines.push("");
-    lines.push("Items:");
-    items.forEach(({ product, qty }) => {
-      lines.push(`  ${qty} x ${product.name} @ ${fmt(priceFor(product))}  =  ${fmt(priceFor(product) * qty)}`);
+    const html = buildInvoiceHTML({
+      orderId, name, email, phone, address, city,
+      items: items.map(({ product, qty }) => ({
+        name: product.name, qty, unit: priceFor(product),
+      })),
+      subtotal, shipCost, shipping, tax, grand, pay,
     });
-    lines.push("");
-    lines.push("Subtotal:  " + fmt(subtotal));
-    lines.push("Shipping:  " + fmt(shipCost) + "  (" + shipping + ")");
-    lines.push("GST (5%):  " + fmt(tax));
-    lines.push("GRAND TOTAL: " + fmt(grand));
-    lines.push("");
-    lines.push("Payment: " + payLabel(pay));
-    lines.push("");
-    lines.push("Thank you for choosing MTC Solar.");
-    const blob = new Blob([lines.join("\n")], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `${orderId}-invoice.txt`; a.click();
-    URL.revokeObjectURL(url);
+    const w = window.open("", "_blank", "width=900,height=1200");
+    if (!w) {
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${orderId}-invoice.html`; a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
   };
 
   const confirm = async () => {
