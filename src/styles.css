@@ -236,10 +236,10 @@ textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus,
 select:-webkit-autofill {
-  -webkit-text-fill-color: hsl(var(--foreground)) !important;
-  -webkit-box-shadow: 0 0 0 1000px hsl(var(--surface)) inset !important;
-  box-shadow: 0 0 0 1000px hsl(var(--surface)) inset !important;
-  caret-color: hsl(var(--foreground)) !important;
+  -webkit-text-fill-color: var(--foreground) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--surface) inset !important;
+  box-shadow: 0 0 0 1000px var(--surface) inset !important;
+  caret-color: var(--foreground) !important;
   transition: background-color 9999s ease-in-out 0s;
   border-radius: 0.75rem;
 }
