@@ -19,7 +19,7 @@ const isEmail = (v: string) => /^\S+@\S+\.\S+$/.test(v.trim());
 const isPhone = (v: string) => /^[0-9+\-\s]{7,}$/.test(v.trim());
 
 export function CheckoutModal() {
-  const { checkoutOpen, closeCheckout, items, totals, clear } = useStore();
+  const { checkoutOpen, closeCheckout, items, totals, clear, setQty, remove, removeAll } = useStore();
   const [step, setStep] = useState<Step>(0);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
