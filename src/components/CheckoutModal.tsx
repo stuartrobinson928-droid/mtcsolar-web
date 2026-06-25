@@ -284,7 +284,7 @@ export function CheckoutModal() {
                       {items.map(({ product, qty }) => (
                         <li
                           key={product.id}
-                          className="flex items-center gap-4 rounded-2xl border border-border/60 bg-surface-elevated/60 p-3"
+                          className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-surface-elevated/60 p-3 sm:flex-row sm:items-center sm:gap-4"
                         >
                           <img
                             src={product.image}
@@ -294,12 +294,41 @@ export function CheckoutModal() {
                           <div className="min-w-0 flex-1">
                             <p className="truncate font-display text-sm font-semibold">{product.name}</p>
                             <p className="text-[11px] text-muted-foreground">
-                              {qty} × {fmt(priceFor(product))}
+                              {fmt(priceFor(product))} each · {fmt(priceFor(product) * qty)} total
                             </p>
                           </div>
-                          <p className="font-display text-sm font-semibold tabular-nums">
-                            {fmt(priceFor(product) * qty)}
-                          </p>
+                          <div className="flex items-center justify-between gap-3 sm:justify-end">
+                            <div className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-surface p-0.5">
+                              <button
+                                onClick={() => remove(product.id)}
+                                aria-label="Decrease quantity"
+                                className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:bg-surface-elevated hover:text-foreground"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <input
+                                type="number"
+                                min={1}
+                                value={qty}
+                                onChange={(e) => setQty(product.id, parseInt(e.target.value, 10) || 0)}
+                                className="w-9 bg-transparent text-center text-xs font-semibold tabular-nums focus:outline-none"
+                              />
+                              <button
+                                onClick={() => setQty(product.id, qty + 1)}
+                                aria-label="Increase quantity"
+                                className="grid h-7 w-7 place-items-center rounded-full text-muted-foreground hover:bg-surface-elevated hover:text-foreground"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => removeAll(product.id)}
+                              aria-label={`Remove ${product.name}`}
+                              className="grid h-9 w-9 flex-none place-items-center rounded-full border border-border/60 text-muted-foreground transition-colors hover:border-destructive/60 hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
