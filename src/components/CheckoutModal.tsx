@@ -611,3 +611,197 @@ function PayOption({
     </button>
   );
 }
+
+// ─────────────────────────────────────────────────────────────
+// Invoice HTML (matches MTC Solar PDF layout + "ECOMMERCE ORDERED" stamp)
+// ─────────────────────────────────────────────────────────────
+function numberToWordsPKR(n: number): string {
+  if (!n || n <= 0) return "Zero Rupees Only";
+  const a = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten",
+    "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const two = (x: number): string =>
+    x < 20 ? a[x] : b[Math.floor(x / 10)] + (x % 10 ? " " + a[x % 10] : "");
+  const three = (x: number): string => {
+    const h = Math.floor(x / 100), r = x % 100;
+    return (h ? a[h] + " Hundred" + (r ? " " : "") : "") + (r ? two(r) : "");
+  };
+  let num = Math.floor(n);
+  const parts: string[] = [];
+  const crore = Math.floor(num / 10000000); num %= 10000000;
+  const lakh = Math.floor(num / 100000); num %= 100000;
+  const thou = Math.floor(num / 1000); num %= 1000;
+  const rest = num;
+  if (crore) parts.push(three(crore) + " Crore");
+  if (lakh) parts.push(two(lakh) + " Lakh");
+  if (thou) parts.push(two(thou) + " Thousand");
+  if (rest) parts.push(three(rest));
+  return parts.join(" ").trim() + " Rupees Only";
+}
+
+interface InvoiceData {
+  orderId: string;
+  name: string; email: string; phone: string; address: string; city: string;
+  items: Array<{ name: string; qty: number; unit: number }>;
+  subtotal: number; shipCost: number; shipping: string; tax: number; grand: number;
+  pay: Pay;
+}
+
+function buildInvoiceHTML(d: InvoiceData): string {
+  const money = (n: number) => "Rs. " + n.toLocaleString("en-PK");
+  const date = new Date().toLocaleDateString("en-GB");
+  const totalQty = d.items.reduce((s, i) => s + i.qty, 0);
+  const rows = d.items.map((it, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td class="left">${escapeHtml(it.name)}</td>
+      <td>${it.qty}</td>
+      <td class="right">${money(it.unit)}</td>
+      <td class="right">${money(it.unit * it.qty)}</td>
+    </tr>`).join("");
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"/>
+<title>Invoice ${escapeHtml(d.orderId)} — MTC Solar</title>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;background:#f3f4f6;margin:0;padding:24px}
+  .page{max-width:820px;margin:0 auto;background:#fff;padding:40px 44px;box-shadow:0 4px 24px rgba(0,0,0,.08);position:relative;overflow:hidden}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #d4a017;padding-bottom:16px}
+  .brand{font-family:Georgia,serif;font-size:28px;font-weight:700;color:#0b2a4a}
+  .brand small{display:block;font-family:Arial;font-size:11px;color:#6b7280;font-weight:400;margin-top:4px}
+  .title{text-align:right}
+  .title h1{margin:0;font-size:26px;letter-spacing:3px;color:#0b2a4a}
+  .paid{display:inline-block;border:2px solid #16a34a;color:#16a34a;font-weight:700;padding:2px 10px;border-radius:4px;margin-top:6px;font-size:12px;letter-spacing:2px}
+  .meta{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px}
+  .meta .box{background:#f9fafb;border-left:3px solid #d4a017;padding:10px 14px}
+  .meta b{color:#0b2a4a}
+  .addr{margin-top:18px;font-size:12px;color:#374151;line-height:1.55}
+  .addr .row{margin-top:4px}
+  .billto{margin-top:18px;background:#0b2a4a;color:#fff;padding:10px 14px;border-radius:4px;font-size:13px}
+  .billto .lbl{font-size:10px;letter-spacing:2px;color:#d4a017;font-weight:700}
+  table.items{width:100%;border-collapse:collapse;margin-top:18px;font-size:13px}
+  table.items th{background:#0b2a4a;color:#fff;padding:10px;text-align:center;font-weight:600}
+  table.items td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:center}
+  table.items td.left{text-align:left}
+  table.items td.right{text-align:right}
+  .grid2{display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-top:18px}
+  .words{background:#fef3c7;border-left:4px solid #d4a017;padding:12px 14px;font-size:12px}
+  .words .lbl{font-size:10px;letter-spacing:2px;color:#92400e;font-weight:700;margin-bottom:4px}
+  .totals{border:1px solid #e5e7eb}
+  .totals .r{display:flex;justify-content:space-between;padding:8px 14px;font-size:13px;border-bottom:1px solid #f3f4f6}
+  .totals .r:last-child{border-bottom:0}
+  .totals .grand{background:#0b2a4a;color:#fff;font-weight:700;font-size:15px}
+  .totals .paidrow{background:#dcfce7;color:#166534;font-weight:600}
+  .banks{margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .bank{border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;font-size:12px}
+  .bank h4{margin:0;background:#0b2a4a;color:#fff;padding:8px 12px;font-size:12px;letter-spacing:1px}
+  .bank .row{display:flex;justify-content:space-between;padding:6px 12px;border-top:1px solid #f3f4f6}
+  .bank .row b{color:#0b2a4a;font-weight:600}
+  .terms{margin-top:20px;font-size:11px;color:#4b5563;line-height:1.6}
+  .terms h4{font-size:12px;letter-spacing:2px;color:#0b2a4a;margin:0 0 6px}
+  .sig{margin-top:24px;display:flex;justify-content:space-between;font-size:11px;color:#6b7280;border-top:1px dashed #d1d5db;padding-top:14px}
+  .foot{margin-top:18px;text-align:center;font-size:11px;color:#6b7280;border-top:2px solid #d4a017;padding-top:10px}
+  .stamp{position:absolute;top:38%;right:8%;transform:rotate(-18deg);border:4px double #16a34a;color:#16a34a;padding:10px 22px;font-weight:800;font-size:22px;letter-spacing:4px;border-radius:8px;opacity:.85;font-family:Arial;pointer-events:none;text-transform:uppercase}
+  .stamp small{display:block;font-size:10px;letter-spacing:3px;text-align:center;margin-top:2px;font-weight:600}
+  .actions{max-width:820px;margin:0 auto 16px;display:flex;gap:8px;justify-content:flex-end}
+  .actions button{background:#0b2a4a;color:#fff;border:0;padding:8px 18px;border-radius:4px;cursor:pointer;font-size:13px}
+  @media print{body{background:#fff;padding:0}.page{box-shadow:none;padding:24px}.actions{display:none}}
+</style></head>
+<body>
+  <div class="actions"><button onclick="window.print()">Print / Save as PDF</button></div>
+  <div class="page">
+    <div class="stamp">Ecommerce Ordered<small>${escapeHtml(d.orderId)}</small></div>
+
+    <div class="top">
+      <div>
+        <div class="brand">MTC Solar<small>Solar Panels • Inverters • Batteries • Energy Solutions</small></div>
+      </div>
+      <div class="title">
+        <h1>SALE INVOICE</h1>
+        <div class="paid">PAID</div>
+      </div>
+    </div>
+
+    <div class="meta">
+      <div class="box"><b>Invoice #</b> ${escapeHtml(d.orderId)}</div>
+      <div class="box"><b>Date</b> ${date}</div>
+      <div class="box"><b>Payment</b> ${escapeHtml(payLabel(d.pay).toUpperCase())}</div>
+      <div class="box"><b>Shipping</b> ${escapeHtml(d.shipping.toUpperCase())}</div>
+    </div>
+
+    <div class="addr">
+      <div class="row"><b>PK Office:</b> Shop No 5, Ground Floor Mall Mansion, 30 Mall Road, Opp. State Bank of Pakistan, Lahore, PK</div>
+      <div class="row"><b>CN Office:</b> 7th Floor, Building 1, Intelligent Park, New Energy Road, Baolong Street, Longgang, Shenzhen, CN</div>
+      <div class="row">+92 321 8347174 • awaismalik.mtc1@gmail.com</div>
+    </div>
+
+    <div class="billto">
+      <div class="lbl">BILL TO</div>
+      <div><b>${escapeHtml(d.name)}</b> • ${escapeHtml(d.phone)} • ${escapeHtml(d.email)}</div>
+      <div style="font-size:12px;opacity:.9;margin-top:2px">${escapeHtml(d.address)}, ${escapeHtml(d.city)}</div>
+    </div>
+
+    <table class="items">
+      <thead><tr><th>#</th><th>Product</th><th>Qty</th><th>Unit Price</th><th>Amount</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+
+    <div class="grid2">
+      <div class="words">
+        <div class="lbl">AMOUNT IN WORDS</div>
+        ${escapeHtml(numberToWordsPKR(d.grand))}
+      </div>
+      <div class="totals">
+        <div class="r"><span>Items / Qty</span><span>${d.items.length} / ${totalQty}</span></div>
+        <div class="r"><span>Subtotal</span><span>${money(d.subtotal)}</span></div>
+        <div class="r"><span>Shipping (${escapeHtml(d.shipping)})</span><span>${money(d.shipCost)}</span></div>
+        <div class="r"><span>GST (5%)</span><span>${money(d.tax)}</span></div>
+        <div class="r grand"><span>Grand Total</span><span>${money(d.grand)}</span></div>
+        <div class="r paidrow"><span>Paid</span><span>${money(d.grand)}</span></div>
+        <div class="r"><span>Balance Due</span><span>Rs. 0</span></div>
+      </div>
+    </div>
+
+    <div class="banks">
+      <div class="bank">
+        <h4>BANK DETAILS — MEEZAN BANK</h4>
+        <div class="row"><b>Title</b><span>MUHAMMAD AWAIS TALIB</span></div>
+        <div class="row"><b>A/C #</b><span>02300103300491</span></div>
+        <div class="row"><b>IBAN</b><span>PK57MEZN0002300103300491</span></div>
+        <div class="row"><b>Branch</b><span>Hall Road, Lahore</span></div>
+      </div>
+      <div class="bank">
+        <h4>BANK DETAILS — BANK ALFALAH</h4>
+        <div class="row"><b>Title</b><span>MTC SOLAR</span></div>
+        <div class="row"><b>A/C #</b><span>03701008467343</span></div>
+        <div class="row"><b>IBAN</b><span>PK54ALFH0370001008467343</span></div>
+        <div class="row"><b>Branch</b><span>Hall Road, Lahore</span></div>
+      </div>
+    </div>
+
+    <div class="terms">
+      <h4>TERMS &amp; CONDITIONS</h4>
+      <ol style="margin:0;padding-left:18px">
+        <li>All goods remain the property of MTC Solar until full payment is received.</li>
+        <li>Prices are subject to change without prior notice; quotations valid for 15 days only.</li>
+        <li>Responsibility for goods ceases upon handover to the carrier/transporter.</li>
+        <li>Any claims for damage, shortage, or loss must be lodged with the transporter directly.</li>
+        <li>Cartage, freight, and forwarding charges are on the buyer's account unless agreed otherwise.</li>
+        <li>No returns or exchanges after 7 days of delivery unless goods are defective.</li>
+        <li>Warranty claims require original invoice and are subject to manufacturer terms.</li>
+        <li>This invoice is electronically generated and is valid without signature.</li>
+      </ol>
+    </div>
+
+    <div class="sig"><span>Created By: MTC Solar E-Commerce</span><span>Authorized Signature ____________________</span></div>
+    <div class="foot">MTC Solar • +92 321 8347174 • awaismalik.mtc1@gmail.com — Thank you for your business!</div>
+  </div>
+</body></html>`;
+}
+
+function escapeHtml(s: string): string {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string
+  ));
+}
