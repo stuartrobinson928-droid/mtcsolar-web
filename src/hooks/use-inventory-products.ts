@@ -133,7 +133,9 @@ export function useCatalog() {
 export function useInventoryProducts() {
   const q = useCatalog();
   const data = (q.data ?? [])
-    .filter((p): p is CatalogItem & { category: Category } => p.visible && p.category !== null)
+    .filter((p): p is CatalogItem & { category: Category } =>
+      p.visible && p.category !== null && p.inStock && p.stock > 0,
+    )
     .map<StorefrontProduct>((p) => ({
       id: p.id,
       name: p.name,
