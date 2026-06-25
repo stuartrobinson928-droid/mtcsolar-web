@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   X, ArrowRight, ArrowLeft, Check, Download, Truck, User, Wallet,
   Banknote, Smartphone, ShieldCheck, ShoppingBag, ChevronDown, ChevronUp,
+  Plus, Minus, Trash2,
 } from "lucide-react";
 import { priceFor, useStore } from "@/context/store";
 import { createOrder } from "@/lib/orders.functions";
