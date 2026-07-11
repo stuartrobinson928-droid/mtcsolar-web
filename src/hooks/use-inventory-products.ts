@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchInventoryProducts, type InventoryProduct, INVENTORY_API_BASE } from "@/integrations/inventory/api";
+import { fetchInventoryProducts, type InventoryProduct, type InventoryResponse, INVENTORY_API_BASE } from "@/integrations/inventory/api";
 import { supabase } from "@/integrations/supabase/client";
 import type { Category, Product } from "@/context/store";
 import panelImg from "@/assets/panel.jpg";
@@ -83,9 +83,72 @@ type Override = {
   sort_order: number;
 };
 
+type LocalProductRow = {
+  id: string;
+  title: string;
+  category: string;
+  brand: string | null;
+  model_number: string | null;
+  specifications: Record<string, unknown> | null;
+  tags: string[] | null;
+  image_url: string | null;
+  price: number;
+  sale_price: number | null;
+  stock_quantity: number;
+  status: string;
+  created_at: string;
+};
+
+function stringifySpecs(specs: Record<string, unknown> | null): string | null {
+  if (!specs) return null;
+  return Object.entries(specs)
+    .map(([key, value]) => `${key}: ${String(value)}`)
+    .join(", ");
+}
+
+function localProductToInventory(row: LocalProductRow): InventoryProduct {
+  const specs = stringifySpecs(row.specifications);
+  return {
+    id: row.id,
+    name: row.title,
+    category: row.category,
+    category_id: null,
+    model: row.model_number ?? row.brand,
+    capacity: specs,
+    product_type: row.brand ?? row.category,
+    warranty: null,
+    specifications: specs,
+    selling_price: Number(row.sale_price ?? row.price ?? 0),
+    quantity: row.stock_quantity ?? 0,
+    in_stock: row.status === "active" && (row.stock_quantity ?? 0) > 0,
+    status: row.status,
+    created_at: row.created_at,
+  };
+}
+
+async function fetchLocalProducts(): Promise<InventoryResponse> {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id,title,category,brand,model_number,specifications,tags,image_url,price,sale_price,stock_quantity,status,created_at")
+    .eq("status", "active")
+    .order("updated_at", { ascending: false });
+  if (error) throw error;
+  const products = ((data ?? []) as LocalProductRow[]).map(localProductToInventory);
+  return { products, total: products.length };
+}
+
+async function fetchInventoryWithFallback(): Promise<InventoryResponse> {
+  try {
+    return await fetchInventoryProducts();
+  } catch (error) {
+    console.warn("[inventory] Remote catalog unavailable; using local product fallback.", error);
+    return fetchLocalProducts();
+  }
+}
+
 async function fetchAllCatalog(): Promise<CatalogItem[]> {
   const [invRes, ovrRes] = await Promise.all([
-    fetchInventoryProducts(),
+    fetchInventoryWithFallback(),
     supabase
       .from("storefront_products")
       .select("inventory_id, visible, image_url, category_override, sort_order"),
@@ -107,7 +170,7 @@ async function fetchAllCatalog(): Promise<CatalogItem[]> {
       category,
       watts,
       tags: parseTags(row),
-      image: ovr?.image_url ?? (category ? fallbackImg[category] : fallbackImg.accessory),
+      image: ovr?.image_url ?? row.image_url ?? (category ? fallbackImg[category] : fallbackImg.accessory),
       price: Number(row.selling_price ?? 0),
       stock,
       lowStockThreshold: 5,
