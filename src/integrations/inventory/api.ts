@@ -20,6 +20,7 @@ export type InventoryProduct = {
   in_stock: boolean;
   status: string;
   created_at: string;
+  image_url?: string | null;
 };
 
 export interface InventoryResponse {
