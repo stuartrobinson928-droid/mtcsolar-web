@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchInventoryProducts, type InventoryProduct, INVENTORY_API_BASE } from "@/integrations/inventory/api";
+import { fetchInventoryProducts, type InventoryProduct, type InventoryResponse, INVENTORY_API_BASE } from "@/integrations/inventory/api";
 import { supabase } from "@/integrations/supabase/client";
 import type { Category, Product } from "@/context/store";
 import panelImg from "@/assets/panel.jpg";
